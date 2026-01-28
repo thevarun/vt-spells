@@ -305,6 +305,46 @@ function install() {
 }
 
 /**
+ * Auto-install Vercel react-best-practices skill for performance optimization
+ * Provides 57 React/Next.js performance rules with built-in guidance
+ */
+async function installReactBestPractices() {
+  const { execSync } = require('child_process');
+
+  log('\n' + colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
+  log(colors.bold + '  REACT BEST PRACTICES SETUP' + colors.reset);
+  log(colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
+  log('\nInstalling Vercel react-best-practices skill (57 performance rules)...\n');
+
+  try {
+    execSync('npx skills add vercel-labs/agent-skills --skill react-best-practices -g -a claude-code -y', {
+      stdio: 'inherit',
+      timeout: 90000,
+    });
+
+    log('\n' + colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
+    log(colors.green + colors.bold + '  ✓ REACT BEST PRACTICES INSTALLED' + colors.reset);
+    log('');
+    log('  The skill provides guidance for:');
+    log('  - Eliminating waterfalls (CRITICAL)');
+    log('  - Bundle size optimization (CRITICAL)');
+    log('  - Server-side performance (HIGH)');
+    log('  - Re-render optimization (MEDIUM)');
+    log('');
+    log('  To update: npx skills update');
+    log(colors.bold + '════════════════════════════════════════════════════════════' + colors.reset + '\n');
+
+  } catch (error) {
+    log('\n' + colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
+    log(colors.yellow + colors.bold + '  ⚠ REACT BEST PRACTICES INSTALLATION SKIPPED' + colors.reset);
+    log('');
+    log('  To install manually:');
+    log('  npx skills add vercel-labs/agent-skills --skill react-best-practices -g -a claude-code');
+    log(colors.bold + '════════════════════════════════════════════════════════════' + colors.reset + '\n');
+  }
+}
+
+/**
  * Auto-install Google's stitch-skills for Stitch integration
  * These skills enhance the designer-founder workflow with Stitch support
  */
@@ -357,7 +397,8 @@ async function installStitchSkills() {
 // Run installation
 try {
   install();
-  // Attempt to install Stitch skills (non-blocking)
+  // Attempt to install external skills (non-blocking)
+  installReactBestPractices();
   installStitchSkills();
 } catch (error) {
   logError(`Installation failed: ${error.message}`);

@@ -41,11 +41,13 @@ Execute fullstack stories using a **hybrid approach** - applying design-first me
 
 ### 2.2 Optional MCPs (graceful degradation)
 
-| MCP | Purpose | Fallback |
-|-----|---------|----------|
+| MCP/Skill | Purpose | Fallback |
+|-----------|---------|----------|
 | Context7 | Library docs | Web search |
 | MagicPatterns | Design code fetch | Manual implementation |
+| Stitch | Design screen conversion | Manual implementation |
 | Serena | Codebase analysis | Manual Glob/Grep |
+| react-best-practices (skill) | React/Next.js performance | Standard implementation |
 
 ### 2.3 Probe Execution
 
@@ -181,6 +183,9 @@ IF task type is UI:
 
 1. Design Analysis:
    - Check for MagicPatterns link
+   - Check for Stitch screen reference:
+     * IF component already exists → Log: "using existing" → SKIP Stitch
+     * IF component NOT exists AND Stitch MCP available → Fetch via MCP
    - Check for shadcn component mentions
    - Identify visual requirements
 
@@ -188,22 +193,29 @@ IF task type is UI:
    IF MagicPatterns link:
      - Fetch code via MCP
      - Adapt for project structure
+   IF Stitch screen (and component doesn't exist):
+     - Fetch and convert via Stitch MCP
+     - Run validation scripts
    IF shadcn components:
      - ALWAYS call get_item_examples_from_registries FIRST
      - Review demo output
      - Implement with correct patterns
 
-3. Visual Validation:
+3. Apply Performance Patterns:
+   IF react-best-practices skill available:
+     - Apply skill guidance during implementation
+
+4. Visual Validation:
    - Navigate to affected page via Playwright
    - Take screenshot
    - Check console for errors
    - Fix and retry if issues (max 3 iterations)
 
-4. Add Tests (after visual validation):
+5. Add Tests (after visual validation):
    - E2E tests for user flows
    - Unit tests for component logic
 
-5. Run test suite and verify all pass
+6. Run test suite and verify all pass
 ```
 
 ### 6.3 Backend Task Execution (TDD)
