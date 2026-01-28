@@ -30,7 +30,7 @@ Convert design output to dev-ready artifacts and save to `{planning_artifacts}/u
 
 ### 1. Conversion (if needed)
 
-**If `design.needs_conversion` = true (SuperDesign or Wireframe):**
+**If `design.needs_conversion` = true (SuperDesign, Stitch, or Wireframe):**
 
 Load and execute: `{installed_path}/tools/conversion.md`
 
@@ -119,6 +119,8 @@ Populate placeholders:
 - `{tool_specific_notes}` → Generate based on tool used:
   - **MagicPatterns:** "React/TypeScript code ready for extraction. Use `read_files` MCP tool to access."
   - **SuperDesign:** "HTML/CSS prototype. Requires conversion to React components."
+  - **Stitch (with react-components):** "React/TypeScript components generated via Google's react-components skill. AST-validated, includes hooks extraction and data decoupling."
+  - **Stitch (quick mapping):** "HTML/CSS prototype converted via shadcn component mapping."
   - **Wireframe:** "Structure reference only. Build components from scratch."
   - **Direct:** "Component mapping provided. No visual prototype created."
 

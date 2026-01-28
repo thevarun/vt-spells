@@ -304,9 +304,61 @@ function install() {
   log('   ✓ desk-check-gate agent\n');
 }
 
+/**
+ * Auto-install Google's stitch-skills for Stitch integration
+ * These skills enhance the designer-founder workflow with Stitch support
+ */
+async function installStitchSkills() {
+  const { execSync } = require('child_process');
+
+  log('\n' + colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
+  log(colors.bold + '  STITCH INTEGRATION SETUP' + colors.reset);
+  log(colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
+  log('\nInstalling Google stitch-skills for Stitch design tool...\n');
+
+  try {
+    // Install design-md skill (required for Stitch)
+    execSync('npx skills add google-labs-code/stitch-skills --skill design-md -g -a claude-code -y', {
+      stdio: 'inherit',
+      timeout: 60000, // 60 second timeout
+    });
+
+    // Install react-components skill (for HTML→React conversion)
+    execSync('npx skills add google-labs-code/stitch-skills --skill react-components -g -a claude-code -y', {
+      stdio: 'inherit',
+      timeout: 60000,
+    });
+
+    log('\n' + colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
+    log(colors.green + colors.bold + '  ✓ STITCH SKILLS INSTALLED SUCCESSFULLY' + colors.reset);
+    log('');
+    log('  To use Stitch in designer-founder workflow:');
+    log('  1. Configure Stitch MCP server');
+    log('  2. Run /designer-founder and select [T] Stitch');
+    log('');
+    log('  To update skills later: npx skills update');
+    log(colors.bold + '════════════════════════════════════════════════════════════' + colors.reset + '\n');
+
+  } catch (error) {
+    log('\n' + colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
+    log(colors.yellow + colors.bold + '  ⚠ STITCH SKILLS INSTALLATION SKIPPED' + colors.reset);
+    log('');
+    log('  Could not auto-install stitch-skills.');
+    log('  This may be due to network issues or missing dependencies.');
+    log('');
+    log('  To install manually later:');
+    log('  npx skills add google-labs-code/stitch-skills -g -a claude-code');
+    log('');
+    log('  You can still use other design tools (SuperDesign, MagicPatterns).');
+    log(colors.bold + '════════════════════════════════════════════════════════════' + colors.reset + '\n');
+  }
+}
+
 // Run installation
 try {
   install();
+  // Attempt to install Stitch skills (non-blocking)
+  installStitchSkills();
 } catch (error) {
   logError(`Installation failed: ${error.message}`);
   // Don't exit with error code - allow npm install to complete

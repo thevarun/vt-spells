@@ -41,6 +41,11 @@ Choose your design approach:
     → Quick HTML/CSS prototypes via VS Code
     → Best for: Rapid visual exploration, custom styling
 
+[T] Stitch (Google AI Design) {show availability status}
+    → AI-generated complete page designs
+    → Best for: Full page layouts, design system consistency
+    → Requires: Stitch MCP + Google's stitch-skills installed
+
 [M] MagicPatterns {show availability status}
     → AI-generated React components
     → Best for: Direct React code, component variations
@@ -53,7 +58,7 @@ Choose your design approach:
     → Skip visuals, map directly to shadcn
     → Best for: Standard patterns, known layouts
 
-Which approach? [S/M/W/D]
+Which approach? [S/T/M/W/D]
 ```
 
 ---
@@ -65,6 +70,7 @@ Based on user selection, load the corresponding tool file:
 | Selection | Tool File |
 |-----------|-----------|
 | S | `{installed_path}/tools/superdesign.md` |
+| T | `{installed_path}/tools/stitch.md` |
 | M | `{installed_path}/tools/magicpatterns.md` |
 | W | `{installed_path}/tools/wireframe.md` |
 | D | `{installed_path}/tools/direct-mapping.md` |

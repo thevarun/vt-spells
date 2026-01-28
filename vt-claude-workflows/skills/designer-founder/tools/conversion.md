@@ -2,7 +2,7 @@
 
 ## Overview
 
-Convert SuperDesign HTML/CSS output to React components. Used when `design.tool_used` = `superdesign`.
+Convert HTML/CSS output to React components. Used when `design.tool_used` = `superdesign`, `stitch`, or `wireframe`.
 
 ---
 
@@ -26,6 +26,21 @@ Map standard elements to shadcn, use MagicPatterns for custom components.
 
 **Best for:** Mix of standard and custom elements
 
+### Strategy G: Google's react-components (Stitch only)
+
+Use Google's react-components skill for full modular React architecture.
+
+**Best for:** Production-quality components, enforced architecture patterns
+**Available:** Only when `design.tool_used` = `stitch`
+
+Features:
+- Modular file structure (Atomic/Composite patterns)
+- Logic extraction to `src/hooks/`
+- Data decoupling to `src/data/mockData.ts`
+- TypeScript interfaces with `Readonly<T>`
+- AST-based validation (no hardcoded hex values)
+- Dark mode support validation
+
 ---
 
 ## Execution Flow
@@ -35,7 +50,7 @@ Map standard elements to shadcn, use MagicPatterns for custom components.
 ```
 CONVERSION STRATEGY
 
-Your SuperDesign prototype is HTML/CSS. Let's convert to React components.
+Your {tool_name} prototype is HTML/CSS. Let's convert to React components.
 
 Prototype location: {design.output_location}
 
@@ -45,6 +60,13 @@ Choose your approach:
     → Analyze HTML and map to shadcn components
     → You install via CLI, minimal custom code
     → Best for: Standard UI patterns
+
+{if design.tool_used = stitch}
+[G] Google's react-components
+    → Full modular React architecture
+    → AST validation, data decoupling, hooks extraction
+    → Best for: Production-quality Stitch conversions
+{/if}
 
 [M] MagicPatterns Conversion {if available, else "(not configured)"}
     → Generate React code from the design
@@ -56,7 +78,7 @@ Choose your approach:
     → Use MagicPatterns for custom components
     → Best for: Mix of standard and custom
 
-Which approach? [C/M/H]
+Which approach? [C/{if stitch}G/{/if}M/H]
 ```
 
 ---
@@ -209,6 +231,81 @@ Starting analysis...
    Generating custom component: {name}
    ```
 5. Combine into unified component list
+
+---
+
+### 2G. Google react-components Execution (Stitch only)
+
+**Prerequisites:** This strategy is only available when `design.tool_used` = `stitch`.
+
+Check if react-components skill is installed. If not:
+
+```
+REACT-COMPONENTS SKILL NOT FOUND
+
+The react-components skill is required for this conversion strategy.
+
+This should have been auto-installed. Install manually with:
+npx skills add google-labs-code/stitch-skills --skill react-components -g -a claude-code -y
+
+Then restart Claude Code and try again.
+
+[B] Back to strategy selection
+```
+
+If installed, invoke the skill:
+
+```
+REACT-COMPONENTS CONVERSION
+
+Invoking Google's react-components skill...
+
+This will:
+1. Fetch HTML from Stitch design
+2. Create modular React components
+3. Extract logic to hooks
+4. Decouple data to mockData.ts
+5. Validate with AST parser
+```
+
+The skill handles:
+- Downloads HTML from Stitch using built-in scripts
+- Creates components from template patterns
+- Validates against architecture checklist
+- Ensures no hardcoded hex values (uses CSS variables)
+- Checks dark mode support
+
+After completion:
+
+```
+REACT COMPONENTS CREATED
+
+Files generated:
+- src/components/{ComponentName}.tsx
+- src/hooks/use{ComponentName}.ts (if logic extracted)
+- src/data/mockData.ts
+
+Validation: {PASSED | FAILED}
+
+shadcn components identified for installation:
+{list from our component mapping}
+
+[R] Review generated files
+[V] Validate again
+[C] Continue to artifacts
+```
+
+**If validation fails:**
+```
+VALIDATION ISSUES
+
+{list of issues}
+
+Options:
+[F] Fix issues - Adjust generated code
+[I] Ignore - Proceed with warnings
+[B] Back - Choose different strategy
+```
 
 ---
 

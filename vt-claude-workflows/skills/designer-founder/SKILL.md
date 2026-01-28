@@ -73,6 +73,8 @@ MagicPatterns MCP: [check if mcp__magicpatterns tools available]
 shadcn MCP: [check if mcp__shadcn tools available]
 Playwright MCP: [check if mcp__playwright tools available]
 SuperDesign: [check if .superdesign/ folder and instructions exist]
+Stitch MCP: [check if mcp__stitch* or stitch* tools available]
+Stitch Skills: [check if design-md skill installed via `npx skills list`]
 ```
 
 Adjust tool menus based on availability. Tools marked as unavailable should show "(not configured)" in menus.
