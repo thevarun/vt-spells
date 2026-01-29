@@ -308,7 +308,7 @@ function install() {
  * Auto-install Vercel react-best-practices skill for performance optimization
  * Provides 57 React/Next.js performance rules with built-in guidance
  */
-async function installReactBestPractices() {
+async function installReactBestPractices(isGlobal) {
   const { execSync } = require('child_process');
 
   log('\n' + colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
@@ -316,11 +316,15 @@ async function installReactBestPractices() {
   log(colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
   log('\nInstalling Vercel react-best-practices skill (57 performance rules)...\n');
 
+  const globalFlag = isGlobal ? ' -g' : '';
+  const execOptions = {
+    stdio: 'inherit',
+    timeout: 90000,
+    cwd: isGlobal ? undefined : (process.env.INIT_CWD || process.cwd()),
+  };
+
   try {
-    execSync('npx skills add vercel-labs/agent-skills --skill react-best-practices -g -a claude-code -y', {
-      stdio: 'inherit',
-      timeout: 90000,
-    });
+    execSync(`npx skills add vercel-labs/agent-skills --skill react-best-practices${globalFlag} -a claude-code -y`, execOptions);
 
     log('\n' + colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
     log(colors.green + colors.bold + '  ✓ REACT BEST PRACTICES INSTALLED' + colors.reset);
@@ -348,7 +352,7 @@ async function installReactBestPractices() {
  * Auto-install Google's stitch-skills for Stitch integration
  * These skills enhance the designer-founder workflow with Stitch support
  */
-async function installStitchSkills() {
+async function installStitchSkills(isGlobal) {
   const { execSync } = require('child_process');
 
   log('\n' + colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
@@ -356,18 +360,19 @@ async function installStitchSkills() {
   log(colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
   log('\nInstalling Google stitch-skills for Stitch design tool...\n');
 
+  const globalFlag = isGlobal ? ' -g' : '';
+  const execOptions = {
+    stdio: 'inherit',
+    timeout: 60000,
+    cwd: isGlobal ? undefined : (process.env.INIT_CWD || process.cwd()),
+  };
+
   try {
     // Install design-md skill (required for Stitch)
-    execSync('npx skills add google-labs-code/stitch-skills --skill design-md -g -a claude-code -y', {
-      stdio: 'inherit',
-      timeout: 60000, // 60 second timeout
-    });
+    execSync(`npx skills add google-labs-code/stitch-skills --skill design-md${globalFlag} -a claude-code -y`, execOptions);
 
     // Install react-components skill (for HTML→React conversion)
-    execSync('npx skills add google-labs-code/stitch-skills --skill react-components -g -a claude-code -y', {
-      stdio: 'inherit',
-      timeout: 60000,
-    });
+    execSync(`npx skills add google-labs-code/stitch-skills --skill react-components${globalFlag} -a claude-code -y`, execOptions);
 
     log('\n' + colors.bold + '════════════════════════════════════════════════════════════' + colors.reset);
     log(colors.green + colors.bold + '  ✓ STITCH SKILLS INSTALLED SUCCESSFULLY' + colors.reset);
@@ -396,10 +401,11 @@ async function installStitchSkills() {
 
 // Run installation
 try {
+  const isGlobal = process.env.npm_config_global === 'true';
   install();
   // Attempt to install external skills (non-blocking)
-  installReactBestPractices();
-  installStitchSkills();
+  installReactBestPractices(isGlobal);
+  installStitchSkills(isGlobal);
 } catch (error) {
   logError(`Installation failed: ${error.message}`);
   // Don't exit with error code - allow npm install to complete

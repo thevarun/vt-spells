@@ -174,6 +174,20 @@ Edit `.claude/scripts/auto_approve_safe.rules.json`:
 }
 ```
 
+#### Rules Lint (optional)
+
+Check for invalid, duplicate, or dead patterns in the hook rules:
+
+```bash
+python3 vt-claude-qol/hooks/auto_approve_safe_rules_check.py
+```
+
+By default this checks `vt-claude-qol/hooks/auto_approve_safe.rules.json`. To lint the installed copy, pass it explicitly:
+
+```bash
+python3 vt-claude-qol/hooks/auto_approve_safe_rules_check.py .claude/scripts/auto_approve_safe.rules.json
+```
+
 ### Context Monitor
 
 Status line script showing:

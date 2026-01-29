@@ -48,6 +48,7 @@ Execute fullstack stories using a **hybrid approach** - applying design-first me
 | Stitch | Design screen conversion | Manual implementation |
 | Serena | Codebase analysis | Manual Glob/Grep |
 | react-best-practices (skill) | React/Next.js performance | Standard implementation |
+| Stitch react-components (skill) | Converting Stitch designs to React code | Standard implementation |
 
 ### 2.3 Probe Execution
 
@@ -183,9 +184,7 @@ IF task type is UI:
 
 1. Design Analysis:
    - Check for MagicPatterns link
-   - Check for Stitch screen reference:
-     * IF component already exists → Log: "using existing" → SKIP Stitch
-     * IF component NOT exists AND Stitch MCP available → Fetch via MCP
+   - Check for Stitch screen reference
    - Check for shadcn component mentions
    - Identify visual requirements
 
@@ -193,9 +192,12 @@ IF task type is UI:
    IF MagicPatterns link:
      - Fetch code via MCP
      - Adapt for project structure
-   IF Stitch screen (and component doesn't exist):
-     - Fetch and convert via Stitch MCP
-     - Run validation scripts
+   IF Stitch screen :
+     * IF component already exists → Log: "using existing" → SKIP Stitch
+     * IF component NOT exists →
+         - Fetch via Stitch MCP
+         - Convert to React components using Stitch react-components skill
+         - Run validation scripts
    IF shadcn components:
      - ALWAYS call get_item_examples_from_registries FIRST
      - Review demo output

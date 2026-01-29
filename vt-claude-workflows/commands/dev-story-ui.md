@@ -54,6 +54,7 @@ Scan story content (tasks, dev notes, acceptance criteria) for:
 | MagicPatterns | Design code fetch | Manual implementation from design |
 | Stitch | Design screen conversion | Manual implementation |
 | react-best-practices (skill) | React/Next.js performance | Standard implementation |
+| Stitch react-components (skill) | Converting Stitch designs to React code | Standard implementation |
 
 ### 2.4 Probe Execution
 
@@ -153,31 +154,6 @@ Dev Agent Record update:
 
 ## Step 6: Design Analysis
 
-### 6.1 Design Source Resolution
-
-```
-Check story for design references:
-
-1. MagicPatterns link → Fetch via MagicPatterns MCP
-2. Stitch screen reference (stitch.new or stitch: prefix):
-   - Extract target component name from reference
-   - CHECK IF COMPONENT EXISTS:
-     * Look for: src/components/{ComponentName}.tsx
-     * Look for: src/app/**/components/{ComponentName}.tsx
-   - IF component exists:
-     * Log: "Component {name} already exists - using existing"
-     * SKIP Stitch fetch
-   - IF component NOT exists AND Stitch MCP available:
-     * Fetch via Stitch MCP
-     * Run validation: npm run validate <file_path>
-   - IF Stitch MCP unavailable:
-     * Log: "Stitch MCP not configured - manual implementation"
-3. Figma/screenshot → Manual implementation
-4. No design reference → Use shadcn patterns
-```
-
-### 6.2 Design Analysis
-
 ```
 1. Extract design references from story:
    - MagicPatterns links
@@ -190,16 +166,31 @@ Check story for design references:
    - CRITICAL: Fetch code via MCP (NEVER build from scratch)
    - Adapt for project structure
 
-3. IF shadcn components needed:
+2. IF Stitch screen reference (stitch.new or stitch: prefix):
+   - Extract target component name from reference
+   - CHECK IF COMPONENT EXISTS:
+     * Look for: .stitch/{ComponentName}.tsx  
+     * Look for: src/components/{ComponentName}.tsx
+     * Look for: src/app/**/components/{ComponentName}.tsx
+   - IF component exists:
+     * Log: "Component {name} already exists - using existing"
+     * SKIP Stitch fetch
+   - IF component NOT exists AND Stitch MCP available:
+     * Fetch via Stitch MCP
+     * Run validation: npm run validate <file_path>
+   - IF Stitch MCP unavailable:
+     * Log: "Stitch MCP not configured - manual implementation"
+
+4. IF shadcn components needed:
    - Call mcp__shadcn__search_items_in_registries for relevant components
    - Note component names for implementation
 
-4. Document design decisions:
+5. Document design decisions:
    - Components to use
    - Styling approach
    - Layout patterns
 
-5. Log design analysis in Dev Agent Record
+6. Log design analysis in Dev Agent Record
 ```
 
 ---
