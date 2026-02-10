@@ -11,6 +11,8 @@ Claude Code quality-of-life improvements: auto-approve hooks, context monitoring
 | **Auto-Format Hook** | Run linters/formatters automatically after file edits |
 | **Completion Notifications** | Desktop notifications + sound when tasks complete |
 | **Optimize Command** | Analyze auto-approve decisions and refine rules |
+| **Fresh Eyes Review** | Mid-session fresh-eyes review using an Opus subagent |
+| **Docs Quick Update** | Detect code changes and suggest targeted documentation updates |
 
 ## Installation
 
@@ -237,9 +239,12 @@ After installation, files are placed in:
 ├── scripts/
 │   ├── auto_approve_safe.py
 │   ├── auto_approve_safe.rules.json
+│   ├── auto_approve_safe_rules_check.py
 │   └── context-monitor.py
 └── commands/
-    └── optimize-auto-approve-hook.md
+    ├── optimize-auto-approve-hook.md
+    ├── docs-quick-update.md
+    └── fresh-eyes.md
 ```
 
 ## Uninstallation
@@ -253,8 +258,11 @@ npm uninstall @torka/claude-qol
 ```bash
 rm -f .claude/scripts/auto_approve_safe.py \
       .claude/scripts/auto_approve_safe.rules.json \
+      .claude/scripts/auto_approve_safe_rules_check.py \
       .claude/scripts/context-monitor.py \
-      .claude/commands/optimize-auto-approve-hook.md
+      .claude/commands/optimize-auto-approve-hook.md \
+      .claude/commands/docs-quick-update.md \
+      .claude/commands/fresh-eyes.md
 ```
 
 **Note**: Your `settings.local.json` is not modified—you may want to manually remove hook/statusLine configurations.

@@ -75,6 +75,33 @@ vt-npm-packages/
 - `install.js` - Copies QoL files to `.claude/scripts/`, preserves user config files
 - `hooks/auto_approve_safe.py` - PreToolUse hook for intelligent command auto-approval
 - `scripts/context-monitor.py` - Status line script showing context usage with color-coded warnings
+- `commands/*.md` - Slash commands (optimize-auto-approve-hook, docs-quick-update, fresh-eyes)
+- `.claude-plugin/plugin.json` - Claude Code plugin manifest defining commands
+
+### Workflow File Format
+
+Workflows are defined as markdown files with:
+- YAML frontmatter for metadata (name, description, model)
+- Step-based sequential execution
+- XML-style workflow markers (`<workflow>`, `<steps>`)
+- State tracking via sidecar YAML files for resumption
+
+### Component Dependencies
+
+| Component | Standalone |
+|-----------|------------|
+| `/git-local-cleanup-push-pr` | Yes |
+| `/github-pr-resolve` | Yes |
+| `/plan-parallelization` | Yes |
+| `/agent-creator` skill | Yes |
+| `/designer-founder` skill | Yes |
+| `/implement-epic-with-subagents` | Requires BMAD Method |
+| `principal-code-reviewer` agent | Requires BMM workflows |
+| `story-prep-master` agent | Requires BMM workflows |
+
+### BMAD Integration
+
+BMAD workflows are installed to `_bmad/bmm/workflows/4-implementation/` (separate from the `.claude/` directory).
 
 ## Publishing Notes
 
