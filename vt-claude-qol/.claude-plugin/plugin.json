@@ -10,6 +10,10 @@
     {
       "name": "docs-quick-update",
       "description": "Detect code changes and suggest targeted documentation updates"
+    },
+    {
+      "name": "fresh-eyes",
+      "description": "Mid-session fresh-eyes review of the current topic using an Opus subagent"
     }
   ],
   "skills": [
