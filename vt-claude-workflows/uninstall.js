@@ -68,6 +68,17 @@ const INSTALLED_FILES = {
   'skills/designer-founder': [
     'workflow.md',
   ],
+  'skills/product-architect': [
+    'SKILL.md',
+    'vt-preferences.md',
+  ],
+  'skills/product-architect/agents': [
+    'pm-agent.md',
+    'architect-agent.md',
+  ],
+  'skills/product-architect/references': [
+    'escalation-guide.md',
+  ],
   'skills/designer-founder/steps': [
     'step-01-context.md',
     'step-01b-continue.md',
@@ -263,6 +274,9 @@ function uninstall() {
     'skills/designer-founder/templates',
     'skills/designer-founder/steps',
     'skills/designer-founder',
+    'skills/product-architect/references',
+    'skills/product-architect/agents',
+    'skills/product-architect',
     'skills/agent-creator/expertise',
     'skills/agent-creator',
   ];

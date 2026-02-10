@@ -34,6 +34,10 @@
     {
       "name": "agent-creator",
       "description": "Creates custom Claude Code sub-agents for project tasks"
+    },
+    {
+      "name": "product-architect",
+      "description": "Agent team that creates PRD + Architecture from product notes. PM and Architect collaborate, escalating only for key decisions."
     }
   ],
   "hooks": {

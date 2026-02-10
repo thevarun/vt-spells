@@ -13,6 +13,11 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+// Files that should not be overwritten if user has customized them
+const PROTECTED_FILES = [
+  'vt-preferences.md',
+];
+
 // ANSI colors for output
 const colors = {
   green: '\x1b[32m',
@@ -42,6 +47,10 @@ function logBackup(message) {
 
 function logSkip(message) {
   log(`  ○ ${message}`, 'yellow');
+}
+
+function logPreserve(message) {
+  log(`  ★ ${message}`, 'yellow');
 }
 
 function logError(message) {
@@ -137,6 +146,13 @@ function copyDirRecursive(src, dest, stats) {
       copyDirRecursive(srcPath, destPath, stats);
     } else {
       if (fs.existsSync(destPath)) {
+        // Check if this is a protected user config file
+        if (PROTECTED_FILES.includes(entry.name)) {
+          stats.preserved.push(destPath);
+          logPreserve(`Preserved (user config): ${path.relative(stats.targetBase, destPath)}`);
+          continue;
+        }
+
         // File exists - check if content differs
         const srcContent = fs.readFileSync(srcPath);
         const destContent = fs.readFileSync(destPath);
@@ -198,6 +214,7 @@ function install() {
     'agents/desk-check-gate.md',
     'skills/agent-creator/',
     'skills/designer-founder/',
+    'skills/product-architect/',
     '*.backup',
   ];
   const addedCount = ensureGitignoreEntries(
@@ -214,6 +231,7 @@ function install() {
     updated: [],
     unchanged: [],
     backups: [],
+    preserved: [],
     targetBase,
   };
 
@@ -281,6 +299,9 @@ function install() {
   log(`   Files copied (new): ${stats.copied.length}`, 'green');
   log(`   Files updated: ${stats.updated.length}`, 'cyan');
   log(`   Files unchanged: ${stats.unchanged.length}`, 'yellow');
+  if (stats.preserved.length > 0) {
+    log(`   Files preserved: ${stats.preserved.length} (user config)`, 'yellow');
+  }
   if (stats.backups.length > 0) {
     log(`   Backups created: ${stats.backups.length} (*.backup files)`, 'yellow');
   }
@@ -289,7 +310,8 @@ function install() {
   log('\n' + colors.bold + '📝 Next Steps' + colors.reset);
   log('   1. Run /git-cleanup-and-merge or /plan-parallelization to test');
   log('   2. Try /designer-founder for UI/UX design workflows');
-  log('   3. Use /dev-story-ui, /dev-story-backend, or /dev-story-fullstack for story execution\n');
+  log('   3. Try /product-architect for autonomous PRD + Architecture (requires Agent Teams)');
+  log('   4. Use /dev-story-ui, /dev-story-backend, or /dev-story-fullstack for story execution\n');
 
   // Note about BMAD dependencies
   log(colors.yellow + '⚠️  Note: Some components work better with BMAD Method installed:' + colors.reset);
@@ -302,6 +324,7 @@ function install() {
   log('   ✓ dev-story-ui, dev-story-backend, dev-story-fullstack');
   log('   ✓ agent-creator skill (with expertise profiles)');
   log('   ✓ designer-founder skill');
+  log('   ✓ product-architect skill (requires Agent Teams + BMAD)');
   log('   ✓ desk-check-gate agent\n');
 }
 

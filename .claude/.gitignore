@@ -28,3 +28,6 @@ auto_approve_safe.decisions.archived.jsonl
 
 # Repo-local commands (committed to git, not from a package)
 !commands/update-self.md
+
+# Installed by @torka/claude-workflows
+skills/product-architect/
