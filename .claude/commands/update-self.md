@@ -4,13 +4,13 @@ description: 'Scan upstream dependencies for staleness, check for updates, and p
 
 # Update Self
 
-You are a dependency maintenance assistant for this monorepo. Your job is to scan all `vt-*/` package directories for external dependencies, check them against `UPSTREAM_DEPS.yaml`, detect upstream changes, and help the user keep workflows current.
+You are a dependency maintenance assistant for this monorepo. Your job is to scan all `npm-*/` package directories for external dependencies, check them against `UPSTREAM_DEPS.yaml`, detect upstream changes, and help the user keep workflows current.
 
 ## Overview
 
 Single invocation, no flags. Runs everything automatically, only pauses for user decisions.
 
-This command auto-discovers package directories by globbing `vt-*/` at the repo root — future packages are picked up automatically.
+This command auto-discovers package directories by globbing `npm-*/` at the repo root — future packages are picked up automatically.
 
 ---
 
@@ -40,24 +40,24 @@ This command auto-discovers package directories by globbing `vt-*/` at the repo 
    Total deps: {count}
    Last full check: {last_full_check} ({N} days ago)
    GitHub API: {available | unavailable}
-   Package dirs: {list of vt-*/ dirs found}
+   Package dirs: {list of npm-*/ dirs found}
    ```
 
 ### Phase 1: Auto-detect Dependency Changes
 
-Scan all `vt-*/` package source directories (NOT `.claude/` or `_bmad/` installed copies) to find current dependencies and compare against the manifest.
+Scan all `npm-*/` package source directories (NOT `.claude/` or `_bmad/` installed copies) to find current dependencies and compare against the manifest.
 
 **Scan techniques:**
 
 | What | How | Where |
 |------|-----|-------|
-| MCP tools (by call) | Grep for `mcp__(\w+)__` → extract unique server names from capture group | `vt-*/**/*.md` |
-| MCP tools (by name) | Grep for `(\w+)\s+MCP` → extract tool names | `vt-*/**/*.md` |
-| External skills | Grep for `npx skills add` or `npx @anthropic-ai/skills` | `vt-*/install.js`, `vt-*/**/*.md` |
-| Peer dependencies | Parse `peerDependencies` from JSON | `vt-*/package.json` |
-| Community repos | Grep for `github.com/` URLs | `vt-*/**/COMMUNITY-REPOS.md` |
-| Claude Code API surfaces | Grep for `PreToolUse`, `PostToolUse`, `status_line`, `plugin.json` | `vt-*/**/*.py`, `vt-*/**/*.json`, `vt-*/**/*.md` |
-| BMAD references | Grep for `bmad` or `BMAD` | `vt-*/**/*.md`, `vt-*/**/*.js` |
+| MCP tools (by call) | Grep for `mcp__(\w+)__` → extract unique server names from capture group | `npm-*/**/*.md` |
+| MCP tools (by name) | Grep for `(\w+)\s+MCP` → extract tool names | `npm-*/**/*.md` |
+| External skills | Grep for `npx skills add` or `npx @anthropic-ai/skills` | `npm-*/install.js`, `npm-*/**/*.md` |
+| Peer dependencies | Parse `peerDependencies` from JSON | `npm-*/package.json` |
+| Community repos | Grep for `github.com/` URLs | `npm-*/**/COMMUNITY-REPOS.md` |
+| Claude Code API surfaces | Grep for `PreToolUse`, `PostToolUse`, `status_line`, `plugin.json` | `npm-*/**/*.py`, `npm-*/**/*.json`, `npm-*/**/*.md` |
+| BMAD references | Grep for `bmad` or `BMAD` | `npm-*/**/*.md`, `npm-*/**/*.js` |
 
 **For each existing dep in the manifest:** auto-update its `local_files` array with the files where it's referenced. Use relative paths from repo root.
 
@@ -263,7 +263,7 @@ Next action: {suggestion based on findings}
 3. **Maximum API calls per run:** 20 `gh api` calls + 5 web searches (across all sub-agents combined)
 4. **Always confirms before adding/removing deps** from the manifest (Phase 1)
 5. **Always confirms before editing any non-manifest file** (Phase 4)
-6. **Scans only `vt-*/` source directories** — never `.claude/` or `_bmad/` installed copies
+6. **Scans only `npm-*/` source directories** — never `.claude/` or `_bmad/` installed copies
 
 ---
 
@@ -276,7 +276,7 @@ Next action: {suggestion based on findings}
 | `gh api` rate limited | Fall back to date-based check for remaining deps |
 | `gh api` returns 404 | Skip that dep's GitHub check, use date-based |
 | `npm view` fails | Skip that dep's npm check, use date-based |
-| No `vt-*/` directories found | Stop with error: "No package directories found" |
+| No `npm-*/` directories found | Stop with error: "No package directories found" |
 | Sub-agent times out | Report partial results, continue with other deps |
 | WebSearch returns no results | Note "no upstream info found", classify as STALE |
 
@@ -289,27 +289,27 @@ These are the exact patterns used to detect dependencies in Phase 1:
 ```
 # MCP tool calls — extract server name from capture group 1
 Pattern: mcp__(\w+)__
-Files:   vt-*/**/*.md
+Files:   npm-*/**/*.md
 
 # MCP tool mentions by name — matches "Playwright MCP", "Serena MCP", etc.
 Pattern: (\w+)\s+MCP
-Files:   vt-*/**/*.md
+Files:   npm-*/**/*.md
 
 # External skill installs
 Pattern: npx\s+(skills\s+add|@anthropic-ai/skills)
-Files:   vt-*/install.js, vt-*/**/*.md
+Files:   npm-*/install.js, npm-*/**/*.md
 
 # Peer dependencies
 Method:  JSON parse peerDependencies
-Files:   vt-*/package.json
+Files:   npm-*/package.json
 
 # Community repos
 Pattern: github\.com/[\w-]+/[\w-]+
-Files:   vt-*/**/COMMUNITY-REPOS.md
+Files:   npm-*/**/COMMUNITY-REPOS.md
 
 # Claude Code API surfaces
 Pattern: PreToolUse|PostToolUse|status.line|plugin\.json|\.claude-plugin
-Files:   vt-*/**/*.py, vt-*/**/*.json, vt-*/**/*.md
+Files:   npm-*/**/*.py, npm-*/**/*.json, npm-*/**/*.md
 ```
 
 ---
@@ -347,9 +347,9 @@ Manifest: UPSTREAM_DEPS.yaml (schema v1)
 Total deps: 12
 Last full check: 2026-02-10 (0 days ago)
 GitHub API: available
-Package dirs: vt-claude-workflows/, vt-claude-qol/
+Package dirs: npm-claude-workflows/, npm-claude-qol/
 
-[Scanning vt-*/ directories for dependencies...]
+[Scanning npm-*/ directories for dependencies...]
 
 Scan complete. 12 deps matched, 0 new, 0 orphaned.
 Updated local_files for all deps.
@@ -377,7 +377,7 @@ PROPOSED CHANGES
   Source: https://github.com/anthropics/claude-code/releases/tag/v1.1.0
 
   BREAKING:
-    vt-claude-qol/scripts/context-monitor.py
+    npm-claude-qol/scripts/context-monitor.py
       Line 15: context_window payload now includes `cache_creation` field
       → Update token calculation to include cache_creation
 
@@ -386,13 +386,13 @@ PROPOSED CHANGES
       → Opportunity: add hook to auto-log tool execution stats
 
   NO IMPACT:
-    vt-claude-qol/scripts/auto_approve_safe.py — forward-compatible
+    npm-claude-qol/scripts/auto_approve_safe.py — forward-compatible
 
 [STALE] MagicPatterns MCP (45 days)
   Source: web search
 
   ENHANCEMENT:
-    vt-claude-workflows/skills/designer-founder/tools/magicpatterns.md
+    npm-claude-workflows/skills/designer-founder/tools/magicpatterns.md
       create_design now supports `style` parameter
       → Document new style param, add usage example
 

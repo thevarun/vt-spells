@@ -181,13 +181,13 @@ Edit `.claude/scripts/auto_approve_safe.rules.json`:
 Check for invalid, duplicate, or dead patterns in the hook rules:
 
 ```bash
-python3 vt-claude-qol/scripts/auto_approve_safe_rules_check.py
+python3 npm-claude-qol/scripts/auto_approve_safe_rules_check.py
 ```
 
-By default this checks `vt-claude-qol/scripts/auto_approve_safe.rules.json`. To lint the installed copy, pass it explicitly:
+By default this checks `npm-claude-qol/scripts/auto_approve_safe.rules.json`. To lint the installed copy, pass it explicitly:
 
 ```bash
-python3 vt-claude-qol/scripts/auto_approve_safe_rules_check.py .claude/scripts/auto_approve_safe.rules.json
+python3 npm-claude-qol/scripts/auto_approve_safe_rules_check.py .claude/scripts/auto_approve_safe.rules.json
 ```
 
 ### Context Monitor

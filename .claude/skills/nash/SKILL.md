@@ -14,12 +14,9 @@ tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion
 
 ### NPM Package Sources
 
-When a workflow is from an NPM package, edits are made to the source directory:
+When a workflow is from an NPM package, edits are made to the source directory.
 
-| Package | Local Path |
-|---------|------------|
-| `@torka/claude-workflows` | `~/Coding/npm-torka/vt-claude-workflows/` |
-| `@torka/claude-qol` | `~/Coding/npm-torka/vt-claude-qol/` |
+Read config from `~/.claude/nash-sources.yaml`. If the file is missing, ask the user for their local source paths and offer to create the file (see `nash-sources.example.yaml` for the format).
 
 ### Workflow File Locations
 
@@ -133,17 +130,20 @@ WORKFLOW_FILE=".claude/agents/{name}.md"
 
 ### 2.2 Dynamic NPM Package Detection
 
-Determine if the workflow comes from an NPM package by reading `plugin.json` files:
+Determine if the workflow comes from an NPM package by reading the config and `plugin.json` files:
 
 ```bash
-# Known NPM package directories
-NPM_PACKAGES=(
-  "$HOME/Coding/npm-torka/vt-claude-workflows"
-  "$HOME/Coding/npm-torka/vt-claude-qol"
-)
+# Read package source paths from config
+# ~/.claude/nash-sources.yaml contains:
+#   packages:
+#     "@torka/claude-workflows": "~/Coding/vt-spells/npm-claude-workflows"
+#     "@torka/claude-qol": "~/Coding/vt-spells/npm-claude-qol"
+
+CONFIG_FILE="$HOME/.claude/nash-sources.yaml"
+# Parse package paths from config (expand ~ to $HOME)
 
 # For each package, read plugin.json to find workflow sources
-for pkg in "${NPM_PACKAGES[@]}"; do
+for pkg in <parsed_package_paths>; do
   if [ -f "$pkg/.claude-plugin/plugin.json" ]; then
     cat "$pkg/.claude-plugin/plugin.json"
     # Parse the commands, agents, skills arrays
@@ -153,10 +153,12 @@ done
 ```
 
 **Detection logic:**
-1. Read each package's `plugin.json`
-2. Check if workflow name appears in `commands`, `agents`, or `skills` arrays
-3. If match found → NPM package source (record package path)
-4. If no match → Project-specific
+1. Read `~/.claude/nash-sources.yaml` to get package source paths
+2. Read each package's `plugin.json`
+3. Check if workflow name appears in `commands`, `agents`, or `skills` arrays
+4. If match found → NPM package source (record package path from config)
+5. If no match → Project-specific
+6. If config file missing → Ask user for paths and offer to create it
 
 ### 2.3 Gather All Context Files
 
@@ -309,13 +311,13 @@ cat .claude/commands/{name}.md | head -50
 
 **Step 1:** Read NPM package CLAUDE.md for package-specific instructions:
 ```bash
-cat ~/Coding/npm-torka/{package-name}/CLAUDE.md
+cat {source_path}/CLAUDE.md
 ```
 
 **Step 2:** Make edits to NPM package source:
 ```bash
 Edit(
-    file_path="~/Coding/npm-torka/{package-name}/{source-path}",
+    file_path="{source_path}/{source-path}",
     old_string="...",
     new_string="..."
 )
@@ -323,20 +325,20 @@ Edit(
 
 **Step 3:** Bump version (patch for fixes, minor for features):
 ```bash
-cd ~/Coding/npm-torka/{package-name}
+cd {source_path}
 npm version patch --no-git-tag-version
 ```
 
 **Step 4:** Commit changes:
 ```bash
-cd ~/Coding/npm-torka/{package-name}
+cd {source_path}
 git add -A
 git commit -m "fix({workflow-name}): {brief description}"
 ```
 
 **Step 5:** Push if configured:
 ```bash
-cd ~/Coding/npm-torka/{package-name}
+cd {source_path}
 git push origin main 2>/dev/null || echo "Push manually if needed"
 ```
 
@@ -345,7 +347,7 @@ git push origin main 2>/dev/null || echo "Push manually if needed"
 Ready to publish @torka/{package-name}@{new-version}
 
 If you have 2FA enabled on npmjs.com, run manually:
-cd ~/Coding/npm-torka/{package-name} && npm publish
+cd {source_path} && npm publish
 
 Otherwise, I can run `npm publish` for you.
 ```
@@ -362,7 +364,7 @@ npm update @torka/{package-name}
 cat {modified-file-path}
 
 # For NPM packages, verify version bump
-cat ~/Coding/npm-torka/{package-name}/package.json | grep version
+cat {source_path}/package.json | grep version
 ```
 
 ### CHECKPOINT 5 (Final)

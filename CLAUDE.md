@@ -21,11 +21,11 @@ Both packages are distribution-only with no build/test/lint steps. The only scri
 
 ```bash
 # Test installation scripts locally
-node vt-claude-workflows/install.js
-node vt-claude-workflows/uninstall.js
+node npm-claude-workflows/install.js
+node npm-claude-workflows/uninstall.js
 
-node vt-claude-qol/install.js
-node vt-claude-qol/uninstall.js
+node npm-claude-qol/install.js
+node npm-claude-qol/uninstall.js
 ```
 
 ## Architecture
@@ -48,7 +48,7 @@ The install scripts handle:
 vt-npm-packages/
 ├── package.json                 # Root workspace config (private)
 ├── UPSTREAM_DEPS.yaml           # Dependency manifest (run /update-self)
-├── vt-claude-workflows/         # @torka/claude-workflows package
+├── npm-claude-workflows/        # @torka/claude-workflows package
 │   ├── commands/                # Slash commands (markdown)
 │   ├── agents/                  # AI agent definitions (markdown)
 │   ├── skills/                  # Interactive skill workflows
@@ -56,7 +56,7 @@ vt-npm-packages/
 │   ├── install.js               # Post-install script
 │   └── uninstall.js             # Pre-uninstall script
 │
-└── vt-claude-qol/               # @torka/claude-qol package
+└── npm-claude-qol/              # @torka/claude-qol package
     ├── scripts/                 # PreToolUse hooks & utility scripts (Python)
     ├── commands/                # Slash commands (markdown)
     ├── install.js               # Post-install script

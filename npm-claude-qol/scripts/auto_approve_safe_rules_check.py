@@ -3,7 +3,7 @@
 Lint auto_approve_safe rules for duplicates, invalid regex, and likely-dead patterns.
 
 Usage:
-  python3 vt-claude-qol/scripts/auto_approve_safe_rules_check.py [path ...]
+  python3 npm-claude-qol/scripts/auto_approve_safe_rules_check.py [path ...]
 """
 
 from __future__ import annotations
