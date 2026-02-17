@@ -386,7 +386,7 @@ PROPOSED CHANGES
       → Opportunity: add hook to auto-log tool execution stats
 
   NO IMPACT:
-    vt-claude-qol/hooks/auto_approve_safe.py — forward-compatible
+    vt-claude-qol/scripts/auto_approve_safe.py — forward-compatible
 
 [STALE] MagicPatterns MCP (45 days)
   Source: web search

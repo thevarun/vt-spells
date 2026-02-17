@@ -38,6 +38,7 @@ const INSTALLED_FILES = {
   scripts: [
     'auto_approve_safe.py',
     'auto_approve_safe.rules.json',
+    'auto_approve_safe_rules_check.py',
     'context-monitor.py',
   ],
   commands: [

@@ -8,9 +8,9 @@ Handles PreToolUse events to:
 - Defer everything else to normal permission system ("ask")
 
 Install:
-  1. mkdir -p ~/.claude/hooks && chmod 700 ~/.claude/hooks
-  2. Save this file to ~/.claude/hooks/auto_approve_safe.py
-  3. chmod +x ~/.claude/hooks/auto_approve_safe.py
+  1. mkdir -p ~/.claude/scripts && chmod 700 ~/.claude/scripts
+  2. Save this file to ~/.claude/scripts/auto_approve_safe.py
+  3. chmod +x ~/.claude/scripts/auto_approve_safe.py
   4. Add hook config to ~/.claude/settings.json
 """
 

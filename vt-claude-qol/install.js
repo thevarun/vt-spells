@@ -225,7 +225,6 @@ function install() {
 
   // Define what to copy and where
   const mappings = [
-    { src: 'hooks', dest: 'scripts' },     // Hooks go to scripts directory
     { src: 'scripts', dest: 'scripts' },
     { src: 'commands', dest: 'commands' },
     { src: 'skills', dest: 'skills' },

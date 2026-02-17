@@ -57,8 +57,7 @@ vt-npm-packages/
 │   └── uninstall.js             # Pre-uninstall script
 │
 └── vt-claude-qol/               # @torka/claude-qol package
-    ├── hooks/                   # PreToolUse hooks (Python)
-    ├── scripts/                 # Utility scripts (Python)
+    ├── scripts/                 # PreToolUse hooks & utility scripts (Python)
     ├── commands/                # Slash commands (markdown)
     ├── install.js               # Post-install script
     └── uninstall.js             # Pre-uninstall script
@@ -74,7 +73,7 @@ vt-npm-packages/
 
 **claude-qol:**
 - `install.js` - Copies QoL files to `.claude/scripts/`, preserves user config files
-- `hooks/auto_approve_safe.py` - PreToolUse hook for intelligent command auto-approval
+- `scripts/auto_approve_safe.py` - PreToolUse hook for intelligent command auto-approval
 - `scripts/context-monitor.py` - Status line script showing context usage with color-coded warnings
 - `commands/*.md` - Slash commands (optimize-auto-approve-hook, docs-quick-update, fresh-eyes)
 - `.claude-plugin/plugin.json` - Claude Code plugin manifest defining commands
