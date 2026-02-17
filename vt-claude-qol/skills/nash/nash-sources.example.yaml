@@ -1,0 +1,8 @@
+# Nash: NPM package source directories
+# Copy to ~/.claude/nash-sources.yaml and customize paths
+#
+# Maps @torka npm packages to their local source directories.
+# Nash reads this config to know where to apply workflow edits.
+packages:
+  "@torka/claude-workflows": "~/Coding/vt-spells/npm-claude-workflows"
+  "@torka/claude-qol": "~/Coding/vt-spells/npm-claude-qol"

@@ -240,6 +240,22 @@ function install() {
     }
   }
 
+  // Copy nash-sources.example.yaml to ~/.claude/nash-sources.yaml if it doesn't exist
+  const globalClaudeDir = path.join(os.homedir(), '.claude');
+  const nashConfigDest = path.join(globalClaudeDir, 'nash-sources.yaml');
+  const nashConfigSrc = path.join(packageDir, 'skills', 'nash', 'nash-sources.example.yaml');
+  if (fs.existsSync(nashConfigSrc) && !fs.existsSync(nashConfigDest)) {
+    if (!fs.existsSync(globalClaudeDir)) {
+      fs.mkdirSync(globalClaudeDir, { recursive: true });
+    }
+    fs.copyFileSync(nashConfigSrc, nashConfigDest);
+    logSuccess(`Copied: ~/.claude/nash-sources.yaml (edit paths for your setup)`);
+    stats.copied.push(nashConfigDest);
+  } else if (fs.existsSync(nashConfigDest)) {
+    logPreserve(`Preserved (user config): ~/.claude/nash-sources.yaml`);
+    stats.preserved.push(nashConfigDest);
+  }
+
   // Summary
   log('\n' + colors.bold + '📊 Installation Summary' + colors.reset);
   log(`   Files copied: ${stats.copied.length}`, 'green');
