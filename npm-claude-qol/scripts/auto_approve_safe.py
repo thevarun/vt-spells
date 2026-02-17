@@ -80,17 +80,101 @@ def check_sensitive_path(file_path: str, sensitive_patterns: list[str]) -> bool:
 
 
 def split_compound_shell_command(command: str) -> list[str]:
-    """Split a shell command on simple compound operators (heuristic, not a full parser)."""
+    """Split a shell command on compound operators, respecting quotes and subshells.
+
+    Note: Patterns using (\\s*2>&1)?$ work because we do NOT split on > or bare &.
+    Only &&, ||, ;, and | (outside quotes/subshells) trigger splits.
+    """
     command = (command or "").strip()
     if not command:
         return []
-    # Common patterns produced by agents: `cd x && pnpm test`, `cmd1; cmd2`
-    return [p.strip() for p in re.split(r"\s*(?:&&|;|\|)\s*", command) if p.strip()]
+
+    segments = []
+    current = []
+    in_single_quote = False
+    in_double_quote = False
+    in_backtick = False
+    paren_depth = 0       # tracks $(...) and (...) nesting
+    brace_depth = 0       # tracks ${...} and { ...; } nesting
+    i = 0
+
+    while i < len(command):
+        ch = command[i]
+
+        # Handle backslash escapes -- not inside single quotes
+        if ch == '\\' and i + 1 < len(command) and not in_single_quote:
+            current.append(ch)
+            current.append(command[i + 1])
+            i += 2
+            continue
+
+        # Track quote state
+        if ch == "'" and not in_double_quote and not in_backtick:
+            in_single_quote = not in_single_quote
+            current.append(ch)
+            i += 1
+            continue
+        if ch == '"' and not in_single_quote and not in_backtick:
+            in_double_quote = not in_double_quote
+            current.append(ch)
+            i += 1
+            continue
+        if ch == '`' and not in_single_quote:
+            in_backtick = not in_backtick
+            current.append(ch)
+            i += 1
+            continue
+
+        # Track subshell/brace depth when outside quotes
+        if not in_single_quote and not in_double_quote and not in_backtick:
+            if ch == '(':
+                paren_depth += 1
+            elif ch == ')' and paren_depth > 0:
+                paren_depth -= 1
+            elif ch == '{':
+                brace_depth += 1
+            elif ch == '}' and brace_depth > 0:
+                brace_depth -= 1
+
+        in_any_nesting = (in_single_quote or in_double_quote or in_backtick
+                          or paren_depth > 0 or brace_depth > 0)
+
+        # Only split on operators when completely outside all nesting
+        if not in_any_nesting:
+            # Check for && or ||
+            if i + 1 < len(command) and command[i:i+2] in ('&&', '||'):
+                seg = ''.join(current).strip()
+                if seg:
+                    segments.append(seg)
+                current = []
+                i += 2
+                continue
+            # Check for ; or |
+            if ch in (';', '|'):
+                seg = ''.join(current).strip()
+                if seg:
+                    segments.append(seg)
+                current = []
+                i += 1
+                continue
+
+        current.append(ch)
+        i += 1
+
+    seg = ''.join(current).strip()
+    if seg:
+        segments.append(seg)
+    return segments
 
 
 def is_shell_file_read_command(command: str) -> bool:
     """Detect common shell file-read commands that could exfiltrate secrets."""
     return bool(re.search(r"^\s*(cat|head|tail|less)\b", command or "", re.IGNORECASE))
+
+
+def is_shell_destructive_command(command: str) -> bool:
+    """Detect shell commands that delete/overwrite files."""
+    return bool(re.search(r"^\s*(rm|mv|>\s*)\b", command or "", re.IGNORECASE))
 
 
 def summarize_tool_input(tool_name: str, tool_input: dict) -> dict:
@@ -169,6 +253,12 @@ def make_decision(tool_name: str, tool_input: dict, rules: dict) -> tuple[str, s
             if is_shell_file_read_command(seg) and matches_any_pattern(seg, rules["sensitive_paths"]):
                 return "ask", "Bash command may read sensitive data"
 
+        # Block destructive commands targeting sensitive paths
+        # (Prevents auto-approving: `rm .env`, `mv .key backup`, etc.)
+        for seg in segments:
+            if is_shell_destructive_command(seg) and matches_any_pattern(seg, rules["sensitive_paths"]):
+                return "deny", "Destructive command targets sensitive file"
+
         # Max autonomy, but still require an allowlist match per segment.
         # Add common "glue" patterns that agents use.
         glue_allow_patterns = [
@@ -176,6 +266,7 @@ def make_decision(tool_name: str, tool_input: dict, rules: dict) -> tuple[str, s
             r"^pushd\s+\S+(\s+.*)?$",
             r"^popd$",
             r"^export\s+[A-Za-z_][A-Za-z0-9_]*=.*$",
+            r"^[A-Za-z_][A-Za-z0-9_]*=.*$",  # bare var assignment
             r"^(true|false)$",
         ]
 

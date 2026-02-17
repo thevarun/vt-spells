@@ -88,6 +88,7 @@ Review all ALLOW decisions and flag potentially unsafe patterns:
 | Network with dynamic URL | `curl`/`wget` with variable/constructed URLs | MEDIUM |
 | Dangerous flags | `--force`, `-f`, `--no-verify`, `--hard` | MEDIUM |
 | Recursive delete | `rm -r` or `rm -rf` (should be deny) | HIGH |
+| Sensitive file deletion | `rm` targets .env, .key, credentials, etc. | HIGH |
 | Pipe to shell | `| bash`, `| sh`, `| zsh` | HIGH |
 
 **Output format:**
@@ -108,21 +109,22 @@ POTENTIAL UNSAFE ALLOWS
 Identify overly broad deny patterns that might block safe operations:
 
 **Look for:**
-- Non-recursive `rm` blocked by recursive pattern (e.g., `rm file.txt` blocked by `rm.*-rf`)
+- Commands blocked by overly broad deny patterns (e.g., `kill <pid>` blocked by `pkill -9` pattern)
 - Safe paths incorrectly matching `sensitive_paths` (e.g., `src/utils/tokenizer.ts` matching `token`)
+- Git command variants not covered by the git allowlist (e.g., `git config --get` blocked)
 - Common dev commands that should be allowed (e.g., `npm run build` blocked)
 
 **Output format:**
 ```
 POTENTIAL FALSE POSITIVES
 =========================
-[ ] Pattern: "\\brm\\s+.*(-r|-rf)" may be too broad
-    Blocked: rm file.txt (no -r flag)
-    Suggestion: Use "\\brm\\s+.*\\s+(-r|-rf|--recursive)\\b" instead
+[ ] Pattern: "\\bpkill\\s+-9" may be too broad
+    Blocked: kill 12345 (targeted PID, not mass kill)
+    Suggestion: Add "^kill\\s+\\d+$" to allow_patterns
 
-[ ] Pattern: "\\btoken" in sensitive_paths
-    Blocked: src/utils/tokenizer.ts
-    Suggestion: Use "\\btoken(?!izer)" or "\\btokens?\\b"
+[ ] Pattern: sensitive_paths matching development files
+    Blocked: src/utils/token-schema.ts
+    Suggestion: Sensitive path pattern should use file extension anchoring
 ```
 
 ### Phase 4: Analyze ASK Decisions (Auto-Allow Candidates)
@@ -141,6 +143,19 @@ Identify commands that were asked repeatedly and could be safely auto-allowed.
 | Reversibility | File ops can be undone, commands are read-only or local | Low risk |
 | No dangerous flags | No `--force`, `-f` unless safe context | Explicit caution |
 
+**Pre-filter: Splitter-Bug Artifacts**
+
+Before analyzing ASK decisions, identify entries where the "reason" field contains
+a fragment that looks like a split artifact (partial quoted string, trailing backslash,
+unmatched parenthesis). These were caused by the old splitter splitting inside quotes
+and are now auto-resolved. Report count but skip from analysis.
+
+Example artifacts to detect:
+- reason contains `\"` or `\'` (partial quote)
+- reason segment ends with `\` (truncated escape)
+- reason segment starts with a lowercase word that isn't a known command
+- reason contains a jq-style filter fragment (e.g., `.[] | .path`)
+
 **Process each unique ASK pattern:**
 1. Count occurrences
 2. Check all criteria
@@ -154,7 +169,9 @@ Identify commands that were asked repeatedly and could be safely auto-allowed.
 | `npx tsx script.ts` | `^npx\\s+tsx\\s+[^\\|;&]+$` | No pipes or chains |
 | `npm run custom-script` | `^npm\\s+run\\s+[\\w-]+$` | Word chars and hyphen only |
 | `cat package.json` | Already covered by existing rules | Skip |
-| `rm file.txt` (non-recursive) | `^rm\\s+(?!.*(-r\\|-rf))\\S+$` | Negative lookahead for -r |
+| `vercel ls` | `^(npx\\s+)?vercel\\s+(ls\|...)(\\s+...)?$` | Enumerate safe subcommands |
+| `rm single-file.txt` | `^rm\\s+(?!.*-r)[\\w.@-]+$` | No path separators, no recursive |
+| `npx drizzle-kit generate` | `^npx\\s+(--yes\\s+)?drizzle-kit\\s+...$` | Enumerate safe subcommands |
 
 **Output format:**
 ```
@@ -173,7 +190,16 @@ AUTO-ALLOW CANDIDATES
 
 ### Phase 5: Present Consolidated Recommendations
 
-Display a structured summary of all recommendations:
+First, display the splitter fix impact (from pre-filtered entries in Phase 4):
+
+```
+SPLITTER FIX IMPACT
+====================
+{N} ASK entries were caused by the old quote-splitting bug.
+These are now automatically resolved and require no pattern changes.
+```
+
+Then display a structured summary of all recommendations:
 
 ```
 ==============================================
@@ -319,6 +345,7 @@ Next Steps:
 5. **Prefer specific patterns** over broad ones (e.g., `^npm run build$` over `^npm run .*$`)
 6. **Always provide revert instructions** so user can undo changes easily
 7. **Back up before modifying** - Read the file content before editing so it can be restored if needed
+8. **Check rm targets against sensitive_paths** - Never recommend auto-allowing rm commands that could target .env, .key, credentials, or other sensitive files
 
 ---
 

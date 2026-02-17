@@ -1,5 +1,5 @@
 {
-  "_doc_allow": "Groups: system info, file reading, version checks, git, node/npm/yarn/pnpm, python, rust/go, search/text tools, network (localhost only), filesystem, github CLI, process management, background tasks",
+  "_doc_allow": "Groups: system info, file reading, version checks, git, node/npm/yarn/pnpm, python, rust/go, search/text tools, network (read-only + localhost), filesystem, github CLI, process management, background tasks, CLI tools (vercel/drizzle/next), image inspection, non-recursive rm",
   "_doc_deny": "Blocks: privilege escalation, destructive rm, system modification, fork bombs, pipe-to-shell, mass kill, xargs rm, netcat, crontab",
   "_doc_sensitive": "Protects: env files, crypto keys, SSH, cloud credentials, package registry configs, secrets/tokens, Docker/K8s configs",
 
@@ -31,9 +31,15 @@
     "^npm\\s+ls(\\s+[\\w@/-]+)*$",
     "^npm\\s+view\\s+[\\w@/-]+(\\s+.*)?$",
     "^npm\\s+pack\\s+[\\w@/-]+\\s+--dry-run",
+    "^npm\\s+(info|show)\\s+[@\\w/-]+(\\s+[\\w.]+)?(\\s+2>&1)?$",
+    "^npm\\s+config\\s+(get|list)(\\s+[\\w.-]+)?(\\s+2>/dev/null)?$",
     "^yarn\\s+(test|lint|typecheck|type-check|check|build|dev|start|install|add|remove)(\\s+.*)?$",
     "^npx\\s+(tsc|eslint|prettier|vitest|jest)(\\s+.*)?$",
     "^npx\\s+shadcn@latest\\s+(add|init)(\\s+[\\w@/-]+)*(\\s+--yes)?(\\s+2>&1)?$",
+    "^npx\\s+tsx\\s+[^|;&]+$",
+    "^npx\\s+next\\s+(build|dev|start|lint)(\\s+.*)?$",
+    "^npx\\s+(--yes\\s+)?drizzle-kit\\s+(generate|push|studio)(\\s+--[\\w-]+(\\s+[\\w._-]+)*)*(\\s*2>&1)?$",
+    "^npx\\s+(--yes\\s+)?semantic-release\\s+--dry-run[^|;&]*$",
     "^(PORT=\\d+\\s+)?npx\\s+playwright\\s+(test|install)\\b",
 
     "^pytest(\\s+.*)?$",
@@ -54,6 +60,8 @@
     "^sed\\s+-n\\s+[^|;&]+$",
     "^(sort|uniq)(\\s+.*)?$",
 
+    "^(sips|identify)\\s+[^|;&]+$",
+
     "^curl\\s+.*--head",
     "^curl\\s+-I\\s+",
     "^ping\\s+-c\\s+\\d+\\s+",
@@ -63,6 +71,9 @@
     "^touch\\s+[^|;&]+$",
     "^(cp|mv)\\s+[^|;&]+$",
     "^rmdir\\s+[^|;&]+$",
+    "^rm\\s+(?!.*(-r\\b|-rf\\b|-fr\\b|--recursive))[\\w.@-]+(\\s+[\\w.@-]+)*$",
+
+    "^(npx\\s+)?vercel\\s+(ls|list|inspect|logs|whoami|env\\s+ls|project|--version|deployments)(\\s+[^|;&]*)?$",
 
     "^gh\\s+(pr|issue|repo|release|workflow|run|api|auth)(\\s+.*)?$",
     "^npm\\s+update\\s+[@\\w/-]+$",
@@ -79,6 +90,7 @@
     "^curl\\s+(-[a-zA-Z]+\\s+)*https?://localhost[:/][^|;&]*(\\s*2>&1)?(\\s*2>/dev/null)?$",
     "^curl\\s+-X\\s+(POST|GET|PUT|DELETE)\\s+['\"]?https?://localhost[:/][^|;&]*$",
     "^curl\\s+-s\\s+-o\\s+/dev/null\\s+-w\\s+[^|;&]*https?://localhost[^|;&]*$",
+    "^curl\\s+-s\\s+-o\\s+/dev/null\\s+-w\\s+[^|;&]*https?://[^|;&]*$",
 
     "^pgrep\\s+[^|;&]+$",
     "^ps\\s+aux.*$",
@@ -143,7 +155,7 @@
     "\\.netrc$",
     "\\bsecrets?\\b",
     "\\bpassw(?:ord)?s?\\.(txt|json|env|yaml|yml|ini|conf|cfg)$",
-    "\\btokens?\\b",
+    "\\btokens?\\.(txt|env|yaml|yml|ini|conf|cfg)$",
     "\\.docker/config\\.json",
     "\\.kube/config"
   ]
