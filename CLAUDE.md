@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a monorepo using npm workspaces, containing two npm packages under the `@torka` namespace:
 
-**Repository**: https://github.com/thevarun/vt-npm-packages
+**Repository**: https://github.com/thevarun/vt-spells
 
 | Package | Description |
 |---------|-------------|
@@ -45,7 +45,7 @@ The install scripts handle:
 ### Directory Structure
 
 ```
-vt-npm-packages/
+vt-spells/
 ├── package.json                 # Root workspace config (private)
 ├── UPSTREAM_DEPS.yaml           # Dependency manifest (run /update-self)
 ├── npm-claude-workflows/        # @torka/claude-workflows package
