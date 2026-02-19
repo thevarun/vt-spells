@@ -1,6 +1,6 @@
 # Opus Analysis Prompt Template
 
-> **Usage:** Fill in the placeholders below and provide to an Opus subagent via the Task tool.
+> **Usage:** Fill in the `{PLACEHOLDER}` values and provide to an Opus subagent via the Task tool. File contents are NOT embedded — you read them yourself using the Read tool.
 
 ---
 
@@ -8,40 +8,57 @@
 
 You are an expert workflow analyst reviewing a Claude Code session transcript. Your goal is to identify improvements that will make the workflow more efficient, clear, and effective for future runs.
 
-## Context
+**Start by reading all the files listed below using the Read tool.** Do not skip any files.
 
-### Project Information
-```
-{PROJECT_CLAUDE_MD}
-```
+## Context Files to Read
 
-### Workflow Being Analyzed
-**Name:** `{WORKFLOW_NAME}`
-**Type:** {WORKFLOW_TYPE} (command | skill | agent)
-**Source:** {WORKFLOW_SOURCE} (project-specific | npm-package)
+### 1. Project CLAUDE.md
+Read: `{PROJECT_CLAUDE_MD_PATH}`
 
-### Workflow Definition
-```markdown
-{WORKFLOW_CONTENT}
-```
+### 2. Workflow Files
+**Primary:** Read `{WORKFLOW_FILE_PATH}`
+{ADDITIONAL_WORKFLOW_FILE_PATHS}
 
-{ADDITIONAL_WORKFLOW_FILES}
+### 3. Prior Learnings
+{PRIOR_LEARNINGS_INSTRUCTION}
+
+### 4. Session Transcript(s)
+{SESSION_FILES_INSTRUCTION}
+
+## Workflow Metadata
+
+- **Name:** `{WORKFLOW_NAME}`
+- **Type:** {WORKFLOW_TYPE} (command | skill | agent)
+- **Source:** {WORKFLOW_SOURCE} (project-specific | npm-package)
+- **Analysis Mode:** {ANALYSIS_MODE} (single-session | multi-session)
 
 ---
 
-## Session Transcript
+## Pre-Analysis: Identify Core Design Intent
 
-The following is the session transcript in JSONL format. Each line is a JSON object representing an event (user message, assistant response, tool call, tool result, etc.).
+**Before analyzing individual events, do this first:**
 
-```jsonl
-{SESSION_TRANSCRIPT}
-```
+1. Read the workflow definition and summarize its core philosophy in 2-3 sentences. What is this workflow optimized for? What trade-offs does it make deliberately?
+
+2. Note any content markers like `[truncated]` or `[... N results pruned ...]` in the transcript. These indicate content removed during preprocessing — user messages and errors are always preserved in full.
+
+3. Place your design intent summary at the top of your output under "Design Intent" so reviewers can check your understanding.
+
+This step prevents suggestions that fight the workflow's design goals.
 
 ---
 
 ## Analysis Instructions
 
-Analyze this session transcript against the workflow definition. Focus on practical, actionable improvements.
+Analyze the session transcript against the workflow definition. Focus on practical, actionable improvements.
+
+**Finding Hierarchy** — prioritize in this order:
+1. **Structural bugs**: Steps that fail, produce wrong output, or skip critical validation
+2. **Logic gaps**: Missing error handling, race conditions, unhandled edge cases that actually occurred
+3. **Friction points**: Steps that caused confusion, retries, or user corrections
+4. **Polish**: Clarity improvements, better defaults, cosmetic fixes
+
+Cosmetic suggestions are fine but must be clearly labeled as LOW priority. Don't pad the list — if structural issues are scarce, it's fine to have a short suggestions list.
 
 ### 1. What Went Well
 
@@ -118,6 +135,15 @@ Note any patterns that might indicate systemic issues:
 - Tool usage anti-patterns
 - Communication style issues
 
+### 5. Multi-Session Patterns (if applicable)
+
+**Only include this section when analyzing multiple sessions.**
+
+- Issues that recur across 2+ sessions are **structural** — elevate to HIGH priority regardless of individual severity
+- Distinguish one-off incidents from systemic patterns
+- Track improvement trajectory: did issues from earlier sessions get better or worse?
+- Note which project each pattern came from, since the same workflow may behave differently in different contexts
+
 ---
 
 ## Output Format
@@ -125,9 +151,13 @@ Note any patterns that might indicate systemic issues:
 Structure your response exactly as follows:
 
 ```markdown
-# Workflow Analysis: {WORKFLOW_NAME}
+# Workflow Analysis: {workflow_name}
+
+## Design Intent
+[2-3 sentence summary of the workflow's core philosophy and deliberate trade-offs]
 
 ## Session Summary
+- **Sessions analyzed:** [1 or N with dates]
 - **Duration:** [estimate from timestamps]
 - **Workflow completed:** Yes/No/Partial
 - **Overall smoothness:** [1-10 scale]
@@ -158,7 +188,7 @@ Structure your response exactly as follows:
 - **Root Cause:** [explanation]
 - **Proposed Change:**
   - File: [path]
-  - Edit: [before → after]
+  - Edit: [before -> after]
 - **Expected Benefit:** [description]
 - **Effort:** [Simple/Moderate/Complex]
 
@@ -177,6 +207,9 @@ Structure your response exactly as follows:
 ### Success Patterns Worth Preserving
 - [pattern 1]
 - [pattern 2]
+
+### Multi-Session Patterns (if applicable)
+- [systemic pattern with session references]
 
 ## Recommendations Summary
 
@@ -202,3 +235,9 @@ Structure your response exactly as follows:
 5. **Consider the user.** This workflow is used by a solo developer who values efficiency. Optimize for their workflow, not for edge cases.
 
 6. **Scope appropriately.** Suggest changes to the workflow files, not to Claude's core behavior or the user's project code.
+
+7. **Respect the workflow's design philosophy.** If it deliberately omits guardrails for speed, don't suggest guardrails that add friction without proportional safety benefit. If a workflow is designed to be autonomous, don't suggest adding confirmations.
+
+8. **Avoid absolute bans.** Suggest checks or warnings, not rigid rules. Prefer "warn if X" over "never do X."
+
+9. **Mind truncation markers.** Content marked `[truncated]` or `[... N results pruned ...]` was removed during preprocessing. User messages and errors are preserved in full — focus analysis on what's present.

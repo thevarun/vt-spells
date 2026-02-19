@@ -31,82 +31,159 @@ Read config from `~/.claude/nash-sources.yaml`. If the file is missing, ask the 
 
 ## How It Works
 
-1. **Discovery** - Find the current session and detect which workflows were used
-2. **Selection** - Choose which session/workflow to optimize
-3. **Analysis** - Use Opus to deeply analyze the session transcript
-4. **Review** - Present findings and prioritize improvements
-5. **Execute** - Apply approved changes to workflow sources
+1. **Discovery** - Parse arguments, find sessions, detect workflows
+2. **Selection** - Choose session(s) and workflow to optimize
+3. **Analysis** - Prune transcript if needed, launch Opus subagent
+4. **Review** - Present findings, get user approval on action list
+5. **Execute** - Apply changes, record learnings
+
+**Checkpoints:** 4 total (Discovery, Source Confirmation, Action Approval)
 
 ---
 
 ## STEP 1: Discovery & Selection
 
-### 1.1 Identify Current Context
+### 1.1 Parse Arguments & Identify Context
 
-Detect the current project and find recent sessions:
+Parse the `/nash` invocation for optional workflow name argument:
+
+```
+/nash                        → No target workflow specified
+/nash review /designer-founder → Target: designer-founder
+/nash /implement-epic         → Target: implement-epic
+```
+
+**Argument parsing rules:**
+- Strip leading `/` from workflow names
+- Accept workflow names with or without the slash prefix
+- Multiple words after the workflow name are treated as notes/context (ignore for matching)
+
+Detect the current project:
+```bash
+PROJECT_PATH=$(pwd)
+SESSIONS_DIR=~/.claude/projects
+```
+
+### 1.2 Load Prior Learnings
+
+Check for existing learnings file:
 
 ```bash
-# Get current project path
-PROJECT_PATH=$(pwd)
-
-# Claude session files location
-SESSIONS_DIR=~/.claude/projects
-
-# List recent sessions (most recent first)
-ls -lt "$SESSIONS_DIR"/*/*.jsonl 2>/dev/null | head -10
+# Check project-level learnings
+LEARNINGS_FILE=".claude/skills/nash/nash-learnings.md"
 ```
 
-### 1.2 Parse Session for Workflows
+The file ships with the skill (pre-created with a header comment). If it contains only the header and no entries, treat it as "no prior learnings." If it has entries, pass the file path to Opus as `{PRIOR_LEARNINGS_INSTRUCTION}`.
 
-Read the session JSONL file and extract workflow invocations. Look for:
-- `/command-name` patterns in user messages
-- `Skill` tool invocations
-- `Task` tool invocations with workflow-related prompts
+### 1.3 Discover Sessions
 
-**Detection approach:**
+**Search scope depends on whether a workflow name was provided:**
+
+#### No workflow argument → Current project only
+
+Search recent sessions in the current project directory:
+```bash
+# Find sessions for current project
+# The project path is encoded in the sessions directory name
+ls -lt "$SESSIONS_DIR"/<current-project-encoded>/*.jsonl 2>/dev/null | head -20
 ```
-For each line in session JSONL:
-  - If user message: Look for /[\w:-]+ patterns (slash commands)
-  - If assistant message with tool calls:
-    - If Skill tool: Extract skill name from parameters
-    - If Task tool: Note if it references a workflow
+
+For each session, extract metadata:
+- **Date**: From file modification time
+- **Size**: File size (human-readable)
+- **Line count**: `wc -l`
+- **Workflows detected**: Scan for `/command` patterns and Skill tool invocations
+
+#### Workflow argument provided → Cross-project search
+
+Search across **all** project directories:
+```bash
+# Scan all project session directories
+for project_dir in "$SESSIONS_DIR"/*/; do
+  ls -lt "$project_dir"/*.jsonl 2>/dev/null
+done
 ```
 
-### 1.3 Present Options to User
+For each session found, grep for the target workflow name. Group matching sessions by project:
+```
+Recent sessions with /designer-founder:
 
-Display discovered options:
+ContentFlow (~/Coding/contentflow):
+  a) Feb 13 | 425 lines | 0.4MB
+  b) Feb 10 | 63 lines  | 0.2MB
+
+FamilyTree (~/Coding/familytree):
+  c) Feb 10 | 49 lines  | 0.1MB
+```
+
+### 1.4 Present Options to User
+
+Build the options menu based on discovery results:
+
+#### When no workflow argument was provided:
 
 ```
 === NASH: Workflow Optimization ===
 
-Current Session Analysis:
+Current Project: [project-name]
+
+Current Session:
 - Session: [session-uuid]
-- Duration: [calculated from timestamps]
 - Workflows detected: /dev-story, /code-review
 
 Options:
 1. [Default] Optimize from current session
    - Workflow: [first detected workflow]
-   - Session: [current]
 
-2. Recent sessions:
-   a) [time ago] /create-story on vt-saas-template
-   b) [time ago] /implement-epic on vt-saas-template
+2. Recent sessions (this project):
+   a) [time ago] /create-story | 320 lines | 0.3MB
+   b) [time ago] /implement-epic | 1240 lines | 1.1MB
 
 3. Manual selection
    - Specify workflow + session path
-
-Select option [1-3]:
 ```
+
+#### When workflow argument was provided:
+
+```
+=== NASH: Workflow Optimization ===
+
+Target Workflow: /designer-founder (from args)
+Found 4 sessions across 2 projects.
+
+Options:
+1. [Default] Multi-session analysis (all 4)
+   - Recommended when 3+ sessions match
+
+2. Current project only (2 sessions)
+
+3. Specific session — pick from list:
+   ContentFlow:
+     a) Feb 13 | 425 lines | 0.4MB
+     b) Feb 10 | 63 lines  | 0.2MB
+   FamilyTree:
+     c) Feb 10 | 49 lines  | 0.1MB
+
+4. Manual — specify different workflow + session path
+```
+
+**Smart defaults:**
+- 1 matching session → auto-select it, skip to confirmation
+- 2 sessions → offer both individually or combined
+- 3+ sessions → default to multi-session analysis
+
+**Edge cases:**
+- No workflows detected in current session → skip option 1, show recent sessions list and manual selection
+- Multiple workflows in current session → list all detected, let user pick (prefer most recently invoked as default)
 
 ### CHECKPOINT 1
 
-**Present to user:**
-- Session identified (ID, duration, size)
-- Workflows detected in session
-- Options for what to optimize
+**Present to user via AskUserQuestion:**
+- Sessions discovered (with metadata)
+- Workflow detected or specified
+- Options menu (tailored to argument/no-argument mode)
 
-**Use AskUserQuestion to get user selection before proceeding.**
+**Wait for user selection before proceeding.**
 
 ---
 
@@ -163,7 +240,7 @@ done
 ### 2.3 Gather All Context Files
 
 Collect:
-1. **Session transcript** - The full JSONL file
+1. **Session transcript(s)** - The JSONL file(s) selected
 2. **Primary workflow file** - The main workflow/command/skill definition
 3. **Step files** - Any included steps (for skills)
 4. **Template files** - Referenced templates
@@ -171,33 +248,95 @@ Collect:
 
 ### CHECKPOINT 2
 
-**Confirm with user:**
+**Confirm with user via AskUserQuestion:**
 - Workflow file path(s) to analyze
-- Session file path
+- Session file path(s) and count
 - Workflow source: `project-specific` or `npm-package: @torka/{name}`
 - Context files that will be included
+- Analysis mode: single-session or multi-session
 
-**Use AskUserQuestion for explicit confirmation before proceeding to analysis.**
+**Wait for user confirmation before proceeding to analysis.**
 
 ---
 
 ## STEP 3: Analysis (Opus Subagent)
 
-### 3.1 Prepare Analysis Context
+### 3.0 Transcript Preparation
 
-Read the Opus prompt template:
+Before sending to Opus, prune large transcripts to fit within context limits. Pruned files are written to `.claude/skills/nash/tmp/` (already exists, shipped with the skill).
+
+**First**, clean up any orphans from previous crashed runs:
 ```bash
-cat .claude/skills/nash/OPUS-ANALYSIS-PROMPT.md
+find .claude/skills/nash/tmp -name "*.pruned" -mmin +60 -delete 2>/dev/null
 ```
 
-Populate the template with:
-- `{PROJECT_CLAUDE_MD}` - Contents of project's CLAUDE.md
-- `{WORKFLOW_NAME}` - Name of the workflow being analyzed
-- `{WORKFLOW_TYPE}` - command | skill | agent
-- `{WORKFLOW_SOURCE}` - project-specific | npm-package
-- `{WORKFLOW_CONTENT}` - Full workflow file content
-- `{ADDITIONAL_WORKFLOW_FILES}` - Step files, templates, etc.
-- `{SESSION_TRANSCRIPT}` - Full JSONL content
+Run the co-located pruning script:
+```bash
+python3 .claude/skills/nash/prune_transcript.py .claude/skills/nash/tmp SESSION_FILE_1 [SESSION_FILE_2 ...]
+```
+
+**Size tiers:**
+- **Under 2MB**: Pass full transcript unchanged
+- **2-10MB**: Prune — keep all user messages in full, truncate tool_use inputs >500 chars, tool_result content >1000 chars, text blocks >2000 chars (keep first 200-500 + `[truncated]`), preserve errors in full, drop metadata events
+- **Over 10MB**: Aggressive — also remove consecutive exploratory Glob/Grep/Read events (keep final one in sequence), insert `[... N results pruned ...]` markers
+
+After Opus has finished reading, **clean up immediately**:
+```bash
+rm -f .claude/skills/nash/tmp/*.pruned
+```
+
+### 3.1 Prepare Analysis Prompt
+
+Read the Opus prompt template from `.claude/skills/nash/OPUS-ANALYSIS-PROMPT.md`.
+
+**The key optimization:** Do NOT read transcript or workflow file contents into main agent context. Instead, pass **file paths** to the Opus subagent and let it read them directly. This keeps the main agent's context lean.
+
+Populate only the lightweight placeholders:
+
+| Placeholder | Value | How |
+|-------------|-------|-----|
+| `{WORKFLOW_NAME}` | Workflow name | String |
+| `{WORKFLOW_TYPE}` | command / skill / agent | String |
+| `{WORKFLOW_SOURCE}` | project-specific / npm-package | String |
+| `{ANALYSIS_MODE}` | single-session / multi-session | String |
+| `{PROJECT_CLAUDE_MD_PATH}` | Path to project's CLAUDE.md | File path |
+| `{WORKFLOW_FILE_PATH}` | Primary workflow file path | File path |
+| `{ADDITIONAL_WORKFLOW_FILE_PATHS}` | Extra file paths (steps, templates) | See below |
+| `{PRIOR_LEARNINGS_INSTRUCTION}` | Learnings path or "none" message | See below |
+| `{SESSION_FILES_INSTRUCTION}` | Transcript file path(s) | See below |
+
+**Additional workflow files** — format as a bullet list of Read instructions:
+```
+Also read these supporting files:
+- `{path_to_step_1}`
+- `{path_to_template_1}`
+```
+If none, use: "No additional files."
+
+**Prior learnings** — if `nash-learnings.md` exists:
+```
+Read: `.claude/skills/nash/nash-learnings.md`
+
+Use prior learnings as helpful context, not gospel. Earlier decisions may need revision as workflows evolve. Weigh prior patterns but don't blindly repeat them — if new evidence contradicts an old learning, flag it explicitly.
+```
+If no file exists: "No prior learnings recorded for this project."
+
+**Session files** — for single-session:
+```
+Read the pruned transcript: `.claude/skills/nash/tmp/{filename}.pruned`
+```
+
+For multi-session, enforce a **4MB total budget**:
+- After pruning, sum the sizes of all `.pruned` files
+- If total exceeds 4MB: keep only the most recent sessions that fit within budget, notify user which sessions were dropped
+- If still over budget with a single session: re-run pruning with forced aggressive mode
+
+Then list the files:
+```
+Read each pruned transcript in order:
+1. `.claude/skills/nash/tmp/{session_1}.pruned` — {project_name} | {date} ({size})
+2. `.claude/skills/nash/tmp/{session_2}.pruned` — {project_name} | {date} ({size})
+```
 
 ### 3.2 Launch Opus Subagent
 
@@ -214,13 +353,18 @@ Task(
 ### 3.3 Receive Structured Analysis
 
 The Opus subagent returns findings in structured markdown:
+- Design Intent summary
 - What Went Well (with evidence)
 - What Could Be Better (with evidence)
-- Specific Improvement Suggestions (prioritized)
+- Specific Improvement Suggestions (prioritized by hierarchy)
+- Multi-Session Patterns (if applicable)
+
 
 ### CHECKPOINT 3
 
-**Analysis complete.** Opus findings received. Proceed to review.
+**Wait for Opus subagent to return with findings.**
+
+**Proceed directly to Review — no user input needed here.**
 
 ---
 
@@ -232,6 +376,8 @@ Display the analysis results in an actionable format:
 
 ```
 === ANALYSIS COMPLETE ===
+
+Design Intent: [Opus's summary of the workflow's philosophy]
 
 What Went Well:
 - [finding 1]
@@ -367,15 +513,70 @@ cat {modified-file-path}
 cat {source_path}/package.json | grep version
 ```
 
-### CHECKPOINT 5 (Final)
+### 5.4 Record Learnings
 
-**Summary:**
-- Files modified: [list]
-- Changes made: [summary]
-- Workflow source: [project-specific or npm-package]
-- Next steps: [if any, e.g., "run npm publish manually"]
+Append an entry to `.claude/skills/nash/nash-learnings.md`. Create the file if it doesn't exist.
 
-**Confirm completion with user.**
+**Entry format:**
+
+```markdown
+## {YYYY-MM-DD} - {workflow_name}
+**Session(s)**: {first 8 chars of session UUID} | {single-session | multi-session}
+
+**Changes applied**:
+- {change_title}: {one-line description of what was changed and why}
+- {change_title}: {one-line description}
+
+**Key insights**:
+- {insight}: {what we learned about how this workflow behaves in practice}
+- {insight}: {another learning, if applicable}
+
+**Rejected suggestions**:
+- {suggestion_title}: Rejected because {specific reason — e.g., "adds friction without safety benefit", "contradicts design intent of autonomous execution"}
+- {suggestion_title}: Rejected because {reason}
+```
+
+**Writing rules:**
+- Each applied change gets its own bullet with a title and one-line description
+- Each insight gets its own bullet — capture what we learned, not just what we changed
+- Each rejected suggestion gets its own bullet with the specific rejection reason (this helps Opus avoid suggesting the same thing again)
+- If there are no rejections, omit the "Rejected suggestions" section
+- If there's only one change/insight, still use the bullet format for consistency
+- Keep entries concise — this is a reference log, not a narrative
+
+**Size management:** No hard line limit. When the file grows large (~50+ entries), periodically consolidate the oldest entries into a "Historical Summary" section at the top, preserving key patterns while removing individual entry detail:
+
+```markdown
+# Nash Learnings
+
+## Historical Summary (consolidated from {N} earlier entries)
+- {workflow}: {recurring pattern or settled decision}
+- {workflow}: {another consolidated insight}
+
+---
+
+## {recent entries continue below}
+```
+
+### 5.5 Completion Summary
+
+Display a summary of everything done — no confirmation needed:
+
+```
+=== NASH COMPLETE ===
+
+Workflow: {workflow_name}
+Session(s) analyzed: {count}
+Analysis mode: {single-session | multi-session}
+
+Changes made:
+- {file}: {change summary}
+- {file}: {change summary}
+
+Learnings recorded: .claude/skills/nash/nash-learnings.md
+Source: {project-specific | npm-package}
+Next steps: {if any, e.g., "run npm publish manually"}
+```
 
 ---
 

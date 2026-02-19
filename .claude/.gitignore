@@ -35,3 +35,6 @@ skills/product-architect/
 # Installed by @torka/claude-workflows
 commands/deep-audit.md
 skills/deep-audit/
+
+# Installed by @torka/claude-qol
+skills/nash/nash-learnings.md

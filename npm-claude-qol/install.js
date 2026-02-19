@@ -21,7 +21,8 @@ const colors = {
 
 // Files that should not be overwritten if user has customized them
 const PROTECTED_FILES = [
-  'auto_approve_safe.rules.json'
+  'auto_approve_safe.rules.json',
+  'nash-learnings.md'
 ];
 
 function log(message, color = 'reset') {

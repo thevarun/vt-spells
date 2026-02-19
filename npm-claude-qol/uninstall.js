@@ -36,7 +36,7 @@ function logSkip(message) {
  */
 const INSTALLED_FILES = {
   scripts: [
-    'auto_approve_safe.py',
+    // auto_approve_safe.py is intentionally excluded — removing it breaks PreToolUse hooks
     'auto_approve_safe.rules.json',
     'auto_approve_safe_rules_check.py',
     'context-monitor.py',
@@ -45,6 +45,14 @@ const INSTALLED_FILES = {
     'optimize-auto-approve-hook.md',
     'docs-quick-update.md',
     'fresh-eyes.md',
+  ],
+  'skills/nash': [
+    'SKILL.md',
+    'OPUS-ANALYSIS-PROMPT.md',
+    'nash-sources.example.yaml',
+    'prune_transcript.py',
+    // nash-learnings.md is intentionally excluded — it's user-generated at runtime
+    // tmp/ directory is intentionally excluded — may contain in-progress work
   ],
 };
 
