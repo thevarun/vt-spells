@@ -89,13 +89,16 @@ The user may provide one or more of:
    - Recommended worktree strategy
 
 8. **Save Report**
-   Write to: `_bmad-output/planning-artifacts/parallelization-analysis-{YYYY-MM-DD-HHmm}.md`
-   (Includes timestamp to prevent same-day collisions)
+   Get the current local timestamp by running: `date "+%Y-%m-%d-%H%M"`
+   Write to: `_bmad-output/planning-artifacts/parallelization-analysis-{timestamp}.md`
+   (Includes timestamp to prevent same-day collisions — do NOT guess the time)
 </steps>
 
 ## Output Template
 
-Use this structure for the report:
+Follow this structure exactly. You may add a "Visual Dependency Graph" section
+(ASCII art showing the phase flow) after the Dependency Matrix, but do not add
+other ad-hoc sections or restructure the template:
 
 ```markdown
 # Epic Parallelization Analysis
@@ -171,11 +174,25 @@ git worktree add ../epic-3-email-system feature/epic-3
 | 2 | User Auth | Epic 1 (Infrastructure) | Pending |
 | 5 | Analytics | Epic 2 (Auth) | Pending |
 
+## Visual Dependency Graph
+<!-- ASCII art showing phase flow. Example: -->
+```
+Phase 1:   [Epic 1]    [Epic 3]
+              │
+       ┌──────┼──────┐
+       ▼      ▼      ▼
+Phase 2: [E2]  [E4]  [E5]
+       └──────┼──────┘
+              ▼
+Phase 3:   [Epic 6]
+```
+
 ## Worktree Strategy Recommendations
 - **Max parallel worktrees**: [recommended number based on dependencies]
 - **Critical path**: Epic X → Epic Y → Epic Z
 - **Bottleneck epics**: [epics that block the most others]
 - **Quick wins**: [small epics that can be completed to unblock others]
+- **Merge order**: [for parallel phases, specify which epic to merge first based on what it unblocks]
 ```
 
 ## Important Notes

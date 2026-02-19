@@ -1,6 +1,6 @@
 {
   "name": "@torka/claude-workflows",
-  "version": "0.13.1",
+  "version": "0.13.2",
   "description": "Claude Code workflow helpers: epic automation, git cleanup, agents, and design workflows",
   "keywords": [
     "claude-code",
