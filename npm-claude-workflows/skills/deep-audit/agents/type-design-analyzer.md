@@ -28,6 +28,17 @@ Read SKILL.md for exact dimension boundaries and output format requirements.
 3. **Review domain models**: Read the core domain types (User, Order, Product, etc.). Check if they accurately model the business rules. Look for states that are impossible in the domain but valid in the types.
 4. **Trace type flow**: For important data flows (user input → validation → business logic → persistence), check that types accurately represent the data at each stage and that narrowing happens correctly.
 
+## Tool Usage
+
+Follow the "Tool Usage Strategy" section in SKILL.md. When Serena MCP tools are available, prefer them for this agent's core tasks:
+
+- **Finding `any` types**: Use `find_symbol` with type filter to locate type definitions directly instead of grepping for `any` across all files
+- **Tracing type assertions**: Use `find_referencing_symbols` to see where unsafe `as` casts propagate through the codebase
+- **Checking type/runtime mismatches**: Use `find_symbol` to compare type definitions against their usage sites
+- **Finding type duplication**: Use `find_symbol` to locate all type/interface definitions, then compare shapes
+
+If Serena tools are not available, fall back to Glob + Grep + Read.
+
 ## Output Rules
 
 - Use exactly the `=== FINDING ===` and `=== DIMENSION SUMMARY ===` formats defined in SKILL.md

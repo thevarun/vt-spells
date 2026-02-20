@@ -41,6 +41,10 @@ Read SKILL.md for exact dimension boundaries and output format requirements.
 3. **Check dependency manifest**: Read `package.json` (and lock file if present). For each dependency, assess: Is it still needed? Is it maintained? Is there a lighter alternative? Is it in the right section (dependencies vs devDependencies)?
 4. **Look for patterns, not individual instances**: Don't report every unnecessary comment — identify the PATTERN (e.g., "all service files have redundant JSDoc on every method") and report it once with affected file list.
 
+## Tool Usage
+
+Follow the "Tool Usage Strategy" section in SKILL.md. When Serena MCP tools (`find_symbol`, `find_referencing_symbols`) are available, prefer them for symbol lookups and dependency tracing — they return precise results with less context than full-file reads. Fall back to Glob + Grep + Read if unavailable.
+
 ## Output Rules
 
 - Use exactly the `=== FINDING ===` and `=== DIMENSION SUMMARY ===` formats defined in SKILL.md

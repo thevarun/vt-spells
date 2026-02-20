@@ -38,6 +38,17 @@ Read SKILL.md for exact dimension boundaries and output format requirements.
 3. **Look for patterns**: Don't review files in isolation. Look for inconsistencies ACROSS similar files. If 8 out of 10 route handlers follow one pattern but 2 follow a different pattern, that's a finding.
 4. **Assess value per complexity**: For each abstraction layer, ask: "Does this indirection add value or just make the code harder to follow?" If removing the abstraction would make the code simpler AND not harder to change, it's over-engineering.
 
+## Tool Usage
+
+Follow the "Tool Usage Strategy" section in SKILL.md. When Serena MCP tools are available, prefer them for this agent's core tasks:
+
+- **Circular dependency detection**: Use `find_referencing_symbols` to trace import chains between modules instead of reading every file's import block
+- **God object identification**: Use `find_symbol` to enumerate symbols per module and count responsibilities
+- **Module boundary mapping**: Use `find_referencing_symbols` to map which modules depend on which, revealing tight coupling and incorrect dependency direction
+- **Dead code detection**: Use `find_referencing_symbols` on exported functions/types — zero references means dead code
+
+If Serena tools are not available, fall back to Glob + Grep + Read.
+
 ## Output Rules
 
 - Use exactly the `=== FINDING ===` and `=== DIMENSION SUMMARY ===` formats defined in SKILL.md

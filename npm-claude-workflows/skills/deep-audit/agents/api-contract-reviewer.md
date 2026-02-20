@@ -28,6 +28,10 @@ Read SKILL.md for exact dimension boundaries and output format requirements.
 3. **Compare similar endpoints**: Group endpoints by resource type. Verify they follow the same conventions (naming, pagination, error format, status codes).
 4. **Check internal contracts**: Look at service-to-service function calls. Verify that parameter types, return types, and error handling patterns are consistent across similar services.
 
+## Tool Usage
+
+Follow the "Tool Usage Strategy" section in SKILL.md. When Serena MCP tools (`find_symbol`, `find_referencing_symbols`) are available, prefer them for symbol lookups and dependency tracing — they return precise results with less context than full-file reads. Fall back to Glob + Grep + Read if unavailable.
+
 ## Output Rules
 
 - Use exactly the `=== FINDING ===` and `=== DIMENSION SUMMARY ===` formats defined in SKILL.md

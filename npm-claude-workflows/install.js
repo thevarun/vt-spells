@@ -261,6 +261,18 @@ function install() {
     }
   }
 
+  // Migration: remove renamed agent files from previous versions
+  const migrations = [
+    { old: 'skills/deep-audit/agents/test-coverage-analyst.md', renamed: 'test-strategy-analyst.md' },
+  ];
+  for (const { old: oldFile, renamed } of migrations) {
+    const oldPath = path.join(targetBase, oldFile);
+    if (fs.existsSync(oldPath)) {
+      fs.unlinkSync(oldPath);
+      log(`  Migrated: removed old ${path.basename(oldFile)} (renamed to ${renamed})`, 'blue');
+    }
+  }
+
   // Ensure gitignore entries for BMAD workflow
   const bmadDir = path.join(targetBase, '../_bmad');
   if (fs.existsSync(bmadDir)) {

@@ -38,6 +38,10 @@ Read SKILL.md for exact dimension boundaries and output format requirements.
 3. **Audit interactive components**: For each interactive component (buttons, forms, modals, dropdowns, tabs), check ARIA roles, states, keyboard handling, and focus management.
 4. **Check routing**: For SPAs, check how page transitions are handled for accessibility (focus management, title updates, announcements). For SSR/SSG, check that each page has proper meta tags.
 
+## Tool Usage
+
+Follow the "Tool Usage Strategy" section in SKILL.md. When Serena MCP tools (`find_symbol`, `find_referencing_symbols`) are available, prefer them for symbol lookups and dependency tracing — they return precise results with less context than full-file reads. Fall back to Glob + Grep + Read if unavailable.
+
 ## Output Rules
 
 - Use exactly the `=== FINDING ===` and `=== DIMENSION SUMMARY ===` formats defined in SKILL.md

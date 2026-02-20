@@ -42,6 +42,10 @@ Read SKILL.md for exact dimension boundaries and output format requirements.
 3. **Check error paths**: For each critical operation (auth, data mutation, external API call), verify that errors are caught, logged, and returned in a safe format. Check that error paths don't leak sensitive information.
 4. **Assess confidence**: For each potential finding, ask: "Could a senior security engineer reproduce this?" and "Is there context I'm missing (middleware, framework defaults, environment config) that mitigates this?" Only report findings with confidence >= 80.
 
+## Tool Usage
+
+Follow the "Tool Usage Strategy" section in SKILL.md. When Serena MCP tools (`find_symbol`, `find_referencing_symbols`) are available, prefer them for symbol lookups and dependency tracing — they return precise results with less context than full-file reads. Fall back to Glob + Grep + Read if unavailable.
+
 ## Output Rules
 
 - Use exactly the `=== FINDING ===` and `=== DIMENSION SUMMARY ===` formats defined in SKILL.md

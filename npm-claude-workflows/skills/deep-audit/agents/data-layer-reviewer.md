@@ -28,6 +28,17 @@ Read SKILL.md for exact dimension boundaries and output format requirements.
 3. **Check migration history**: Read migration files in order. Look for risky migrations (data loss, long locks, irreversible changes). Check that each migration has a reasonable rollback strategy.
 4. **Review query patterns**: Look at how the application queries data. Check for missing indexes, N+1 patterns, and unbounded queries. Focus on queries in hot paths (frequently executed endpoints).
 
+## Tool Usage
+
+Follow the "Tool Usage Strategy" section in SKILL.md. When Serena MCP tools are available, prefer them for this agent's core tasks:
+
+- **Tracing query patterns**: Use `find_referencing_symbols` to trace how queries flow from route handlers through services to the data layer
+- **Finding ORM model usage**: Use `find_symbol` to locate model definitions, then `find_referencing_symbols` to see where they're queried
+- **Missing transaction detection**: Use `find_referencing_symbols` on mutation functions to check if callers wrap them in transactions
+- **Schema/code mismatches**: Use `find_symbol` to compare ORM model definitions against migration files
+
+If Serena tools are not available, fall back to Glob + Grep + Read.
+
 ## Output Rules
 
 - Use exactly the `=== FINDING ===` and `=== DIMENSION SUMMARY ===` formats defined in SKILL.md

@@ -68,7 +68,7 @@ vt-spells/
 │   │   │   ├── agents/          # PM and Architect agent definitions
 │   │   │   └── references/      # Escalation guide
 │   │   └── deep-audit/          # Multi-agent codebase audit
-│   │       ├── agents/          # 9 audit agent prompt files
+│   │       ├── agents/          # 10 audit + 1 refactoring planner agent prompt files
 │   │       └── templates/       # Report template
 │   ├── bmad-workflows/          # BMAD Method integration
 │   ├── examples/
@@ -112,7 +112,7 @@ vt-spells/
 | `/dev-story-backend` | workflows | TDD backend story executor (red-green-refactor) | Standalone |
 | `/dev-story-fullstack` | workflows | Hybrid fullstack story executor (auto-detects UI vs backend) | Standalone |
 | `/dev-story-ui` | workflows | Design-first UI story executor with screenshot validation | Standalone |
-| `/deep-audit` | workflows | Multi-agent codebase audit across security, architecture, error handling, and more | Standalone |
+| `/deep-audit` | workflows | Multi-agent codebase audit with auto-generated refactoring roadmap. Supports `--agent <name>` for single-agent runs. Serena MCP-aware. | Standalone |
 | `/optimize-auto-approve-hook` | qol | Analyze auto-approve decisions, identify safe patterns | Standalone |
 | `/docs-quick-update` | qol | Detect code changes, suggest targeted doc updates | Standalone |
 | `/fresh-eyes` | qol | Mid-session fresh-eyes review using an Opus subagent | Standalone |
@@ -125,7 +125,7 @@ vt-spells/
 | `/agent-creator` | workflows | Create custom Claude Code sub-agents with expertise profiles | Standalone |
 | `/designer-founder` | workflows | Transform ideas into dev-ready frontend artifacts (multi-step) | Standalone |
 | `/product-architect` | workflows | Agent team (PM + Architect) creates PRD + Architecture from notes | BMAD Method |
-| `/deep-audit` | workflows | Agent prompts and templates for multi-agent codebase audit | Standalone |
+| `/deep-audit` | workflows | Agent prompts, templates, and refactoring planner for multi-agent codebase audit | Standalone |
 | `/nash` | qol | Review session transcripts to extract learnings and improve workflows | `~/.claude/nash-sources.yaml` |
 
 **Agents (3)**

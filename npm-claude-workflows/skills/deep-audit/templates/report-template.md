@@ -69,6 +69,71 @@ Top {{ACTION_PLAN_COUNT}} prioritized fixes:
 
 {{ACTION_PLAN_ITEMS}}
 
+{{#IF_REFACTOR_PLAN}}
+## Refactoring Roadmap
+
+> **{{THEME_COUNT}} themes** | **{{QUICK_WIN_COUNT}} quick wins** | **Total effort: {{TOTAL_EFFORT}}**
+
+{{EXECUTION_SUMMARY}}
+
+### Quick Wins
+
+{{QUICK_WIN_ITEMS}}
+
+### Phase 1 — Safe Refactors
+
+{{PHASE_1_THEMES}}
+
+### Phase 2 — Enablers
+
+{{PHASE_2_THEMES}}
+
+### Phase 3 — High Impact
+
+{{PHASE_3_THEMES}}
+
+### Phase 4 — Polish
+
+{{PHASE_4_THEMES}}
+
+### Theme Detail Template
+
+<!-- Each theme renders as: -->
+<!--
+#### T-NNN: {{THEME_NAME}}
+
+| | |
+|---|---|
+| **Effort** | {{EFFORT}} |
+| **Risk** | {{RISK}} |
+| **Phase** | {{PHASE}} |
+| **Findings** | {{FINDING_IDS}} |
+| **Dependencies** | {{DEPENDENCIES}} |
+| **Coverage Gate** | {{COVERAGE_GATE}} |
+| **Blast Radius** | {{BLAST_RADIUS}} |
+
+{{SUMMARY}}
+
+**Refactoring Steps:**
+
+{{STEPS}}
+
+**Files Involved:**
+
+{{FILES}}
+
+**Testing:**
+- *Before:* {{TESTS_BEFORE}}
+- *After:* {{TESTS_AFTER}}
+
+{{#IF_WARNINGS}}
+**Warnings:** {{WARNINGS}}
+{{/IF_WARNINGS}}
+
+---
+-->
+{{/IF_REFACTOR_PLAN}}
+
 ## Statistics
 
 | Metric | Value |

@@ -17,11 +17,22 @@ This file is the single source of truth for agent roster, dimension boundaries, 
 | Agent File | Dimension | Model |
 |------------|-----------|-------|
 | `performance-profiler.md` | Performance | sonnet |
-| `test-coverage-analyst.md` | Test Coverage | sonnet |
+| `test-strategy-analyst.md` | Test Coverage, Test Efficiency | opus |
 | `type-design-analyzer.md` | Type Design | sonnet |
 | `data-layer-reviewer.md` | Data Layer & Database | opus |
 | `api-contract-reviewer.md` | API Contracts & Interface Consistency | sonnet |
 | `seo-accessibility-auditor.md` | SEO & Accessibility | sonnet |
+| `documentation-health.md` | Documentation Health | sonnet |
+
+### Refactoring Planner (runs by default after all audit agents)
+
+| Agent File | Purpose | Model |
+|------------|---------|-------|
+| `refactoring-planner.md` | Synthesizes findings into refactoring themes and execution plan | opus |
+
+This agent runs in Phase 6 AFTER deduplication. It receives findings as input (not the codebase). It is skipped when there are 0 findings or the user declines via `--review-before-plan`. See the command file for details.
+
+Each theme includes: `coverage_gate` (REQUIRED/ADEQUATE), `blast_radius` (CONTAINED/MODERATE/WIDE), and `warnings` (anti-pattern flags). See `refactoring-planner.md` for full output format.
 
 ## Dimension Boundaries
 
@@ -62,7 +73,7 @@ Each dimension has a clear scope. Agents MUST stay within their assigned dimensi
 - Unnecessary indirection (wrapper functions that just pass through)
 - Configuration for things that never change
 - Dead code, unused exports, orphaned files
-- **NOT**: intentional design patterns, library APIs (they need flexibility)
+- **NOT**: intentional design patterns, library APIs (they need flexibility), dead/skipped test files and orphaned test utilities (that's Test Efficiency)
 
 ### AI Slop Detection
 - Excessive/unnecessary comments explaining obvious code
@@ -100,7 +111,19 @@ Each dimension has a clear scope. Agents MUST stay within their assigned dimensi
 - Tests that test implementation rather than behavior
 - Missing integration tests for API endpoints
 - Test fixtures with hardcoded secrets or PII
-- **NOT**: 100% coverage goals, testing trivial getters/setters
+- **NOT**: 100% coverage goals, testing trivial getters/setters, test efficiency/waste (that's Test Efficiency)
+
+### Test Efficiency
+- Trivial tests that provide no signal (render-only, getter/setter, library wrapper tests)
+- Tests that mirror implementation instead of asserting behavior (zero-signal mock tests)
+- Dead tests: skipped tests, orphaned test utilities, tests excluded by runner config
+- Redundant coverage: E2E tests duplicating unit-level assertions
+- CI pipeline design: missing regression gate, missing caching, excessive pipeline duration
+- Test suite shape (testing diamond): over-testing trivial code, under-testing critical paths at the right layer
+- Snapshot test overuse (large snapshots, frequently-changing snapshots)
+- Test fixture bloat and duplication
+- Test-to-source code ratio indicating maintenance burden
+- **NOT**: missing tests (that's Test Coverage), test correctness issues, flaky tests (that's Test Coverage)
 
 ### Type Design
 - `any` types that should be specific
@@ -144,6 +167,19 @@ Each dimension has a clear scope. Agents MUST stay within their assigned dimensi
 - Missing Open Graph / social sharing metadata
 - **NOT**: content quality, marketing strategy, visual design choices
 
+### Documentation Health
+- README completeness (description, install, usage, quickstart)
+- Setup and onboarding documentation accuracy
+- Configuration documentation (env vars, config files, feature flags)
+- Public/exported API documentation for complex interfaces
+- Inline documentation for non-obvious logic (complex algorithms, regexes, magic numbers)
+- Doc structure, navigation, and discoverability
+- Doc-code synchronization (stale references, outdated examples)
+- Dead links and broken internal references
+- CLAUDE.md and AI assistant documentation
+- Contributing, licensing, and maintenance docs
+- **NOT**: trivial JSDoc/docstrings (AI Slop dimension), undocumented API endpoints (API Contracts dimension), git-diff-based staleness (/docs-quick-update command), prose style or grammar quality
+
 ## Scoring Rubric
 
 Each dimension is scored 1–10:
@@ -165,10 +201,12 @@ Each dimension is scored 1–10:
 - Dependency Health: weight 1
 - Performance: weight 2 (full mode only)
 - Test Coverage: weight 2 (full mode only)
+- Test Efficiency: weight 1 (full mode only)
 - Type Design: weight 1 (full mode only)
 - Data Layer: weight 2 (full mode only)
 - API Contracts: weight 1 (full mode only)
 - SEO & Accessibility: weight 1 (full mode only)
+- Documentation Health: weight 1 (full mode only)
 
 ## Severity Definitions
 
@@ -251,3 +289,25 @@ assessment: |
 - Do NOT report the same issue multiple times across different files — report the pattern once and list affected files
 - If no findings for a dimension, still include the DIMENSION SUMMARY with score and assessment
 - Keep descriptions factual and evidence-based; avoid vague language like "could potentially" or "might cause issues"
+
+## Tool Usage Strategy
+
+### When Serena MCP is Available
+
+If `find_symbol`, `find_referencing_symbols`, or other Serena MCP tools are available in your tool list, prefer them over Read/Grep for targeted code exploration:
+
+| Task | Without Serena | With Serena |
+|------|---------------|-------------|
+| Find all usages of a function | Grep for function name | `find_referencing_symbols` |
+| Understand module dependencies | Read import statements across files | `find_symbol` + references |
+| Check type definitions | Grep for `interface`/`type` keywords | `find_symbol` with type filter |
+| Trace call chains | Read multiple files following imports | `find_referencing_symbols` recursively |
+| Find implementations | Grep for class/function names | `find_symbol` with implementation filter |
+
+**Fallback**: If Serena tools are not available or return errors, fall back to Read/Grep. Do not fail the audit because an MCP tool is unavailable.
+
+### General Tool Guidelines
+
+- **Prefer targeted reads**: Read specific functions/sections rather than entire files when possible
+- **Use Glob first**: Find relevant files before reading them
+- **Batch searches**: Make parallel Grep calls when checking for multiple patterns

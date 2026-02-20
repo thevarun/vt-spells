@@ -29,6 +29,10 @@ Read SKILL.md for exact dimension boundaries and output format requirements.
 3. **Check resource lifecycle**: For every resource created (connections, listeners, subscriptions, timers), verify there's a corresponding cleanup path. Check error paths too — resources must be cleaned up even when operations fail.
 4. **Assess impact**: Only report findings that would cause noticeable performance degradation (>100ms latency increase, >10MB memory growth, visible UI jank). Skip micro-optimizations.
 
+## Tool Usage
+
+Follow the "Tool Usage Strategy" section in SKILL.md. When Serena MCP tools (`find_symbol`, `find_referencing_symbols`) are available, prefer them for symbol lookups and dependency tracing — they return precise results with less context than full-file reads. Fall back to Glob + Grep + Read if unavailable.
+
 ## Output Rules
 
 - Use exactly the `=== FINDING ===` and `=== DIMENSION SUMMARY ===` formats defined in SKILL.md
