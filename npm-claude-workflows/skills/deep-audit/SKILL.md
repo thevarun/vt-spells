@@ -1,6 +1,18 @@
-# Deep Audit — Skill Reference
+# Deep Audit — Multi-Agent Codebase Audit
 
-This file is the single source of truth for agent roster, dimension boundaries, scoring rubric, and output format. Every audit agent reads this file to understand its scope and output requirements.
+Comprehensive multi-agent codebase audit. Spawns parallel review agents across multiple dimensions and produces a consolidated report with finding triage and theme-based grouping.
+
+**Usage:**
+```
+/deep-audit                              # Quick mode (3 agents)
+/deep-audit --full                       # Full mode (up to 9 agents)
+/deep-audit --pr 42                      # Audit a specific PR diff
+/deep-audit --since abc123f              # Audit changes since a commit hash
+/deep-audit --since 2025-01-15           # Audit changes since a date
+/deep-audit --full --pr 42              # Full mode on a specific PR
+/deep-audit --agent security-and-error-handling     # Run only one agent
+/deep-audit --agent performance-profiler --pr 42    # Single agent on a PR
+```
 
 ## Agent Roster
 
@@ -12,7 +24,7 @@ This file is the single source of truth for agent roster, dimension boundaries, 
 | `architecture-and-complexity.md` | Architecture, Simplification | opus | Architecture decisions need deepest reasoning; over-engineering IS an architecture problem |
 | `code-health.md` | AI Slop Detection, Dependency Health | sonnet | Both smell neglect — slop detection and dependency rot share the same instinct |
 
-### Full Mode (adds 6 more agents — `--full` flag)
+### Full Mode (adds up to 6 more agents — `--full` flag)
 
 | Agent File | Dimension | Model |
 |------------|-----------|-------|
@@ -22,292 +34,449 @@ This file is the single source of truth for agent roster, dimension boundaries, 
 | `data-layer-reviewer.md` | Data Layer & Database | opus |
 | `api-contract-reviewer.md` | API Contracts & Interface Consistency | sonnet |
 | `seo-accessibility-auditor.md` | SEO & Accessibility | sonnet |
-| `documentation-health.md` | Documentation Health | sonnet |
 
-### Refactoring Planner (runs by default after all audit agents)
+> **Note**: `documentation-health.md` is temporarily excluded from the roster. It will be re-added after its scope and budget strategy have been validated in isolation. Run it standalone with `--agent documentation-health` if needed.
 
-| Agent File | Purpose | Model |
-|------------|---------|-------|
-| `refactoring-planner.md` | Synthesizes findings into refactoring themes and execution plan | opus |
+## Key File References
 
-This agent runs in Phase 6 AFTER deduplication. It receives findings as input (not the codebase). It is skipped when there are 0 findings or the user declines via `--review-before-plan`. See the command file for details.
+| File | Purpose |
+|------|---------|
+| `shared-agent-instructions.md` | Output format, confidence rules, false positives, tool guidelines — agents read this directly |
+| `agents/consolidate-and-triage.md` | Consolidation + triage agent prompt |
+| `templates/agent-output.md` | Per-agent output file template |
+| `templates/findings.md` | Combined consolidated findings + triage results template |
+| `templates/report-template.md` | Final report template (includes scoring reference) |
+| `templates/state.json.template` | State tracking structure |
 
-Each theme includes: `coverage_gate` (REQUIRED/ADEQUATE), `blast_radius` (CONTAINED/MODERATE/WIDE), and `warnings` (anti-pattern flags). See `refactoring-planner.md` for full output format.
+<workflow CRITICAL="TRUE">
 
-## Dimension Boundaries
+IT IS CRITICAL THAT YOU FOLLOW THIS WORKFLOW EXACTLY.
 
-Each dimension has a clear scope. Agents MUST stay within their assigned dimensions and NOT report findings that belong to another dimension.
+## Phase 0: Argument Parsing
 
-### Security
-- Authentication & authorization flaws
-- Injection vulnerabilities (SQL, XSS, command injection, path traversal)
-- Secrets/credentials in code or config
-- Insecure cryptographic usage
-- CSRF, SSRF, open redirects
-- Unsafe deserialization
-- Missing rate limiting on auth endpoints
-- **NOT**: general error handling, performance, code style
+Parse `$ARGUMENTS` to determine:
 
-### Error Handling
-- Unhandled promise rejections and uncaught exceptions
-- Empty catch blocks or swallowed errors
-- Missing error boundaries (React) or global error handlers
-- Inconsistent error response formats
-- Missing validation at system boundaries (user input, external APIs)
-- Error messages leaking internal details (overlaps security — report under Security if exploitable)
-- **NOT**: business logic validation, type safety, test assertions
+1. **Mode**: Check for `--full` flag
+   - If `--full` present → `mode = "full"` (up to 9 agents)
+   - Otherwise → `mode = "quick"` (3 agents)
 
-### Architecture
-- Separation of concerns violations
-- Circular dependencies
-- God objects / god modules
-- Missing abstraction layers (e.g., direct DB calls in route handlers)
-- Inconsistent patterns across similar components
-- Tight coupling between modules that should be independent
-- **NOT**: code style, naming conventions, dependency versions
+2. **Single Agent**: Check for `--agent <name>` flag
+   - If `--agent <name>` present → `single_agent = "<name>"`
+   - Otherwise → `single_agent = null`
+   - If both `--full` and `--agent` are present: warn that `--full` is ignored in single-agent mode, set `mode = "single"`, ignore `--full`
+   - If `--agent` is present without `--full`: set `mode = "single"`
 
-### Simplification
-- Over-abstracted code (abstractions used once)
-- Premature optimization
-- Feature flags or backwards-compatibility shims for dead code
-- Unnecessary indirection (wrapper functions that just pass through)
-- Configuration for things that never change
-- Dead code, unused exports, orphaned files
-- **NOT**: intentional design patterns, library APIs (they need flexibility), dead/skipped test files and orphaned test utilities (that's Test Efficiency)
+3. **Scope**: Check for scope flags (mutually exclusive)
+   - `--pr <number>` → `scope = "pr"`, `scope_value = <number>`
+   - `--since <value>` → detect format:
+     - If matches date pattern (YYYY-MM-DD) → `scope = "since-date"`, `scope_value = <date>`
+     - Otherwise → `scope = "since-commit"`, `scope_value = <hash>`
+   - No scope flag → `scope = "full-project"`
 
-### AI Slop Detection
-- Excessive/unnecessary comments explaining obvious code
-- Redundant docstrings on trivial functions
-- Over-verbose variable names (e.g., `resultOfDatabaseQuery`)
-- Defensive error handling for impossible scenarios
-- Unnecessary type annotations that TypeScript can infer
-- "Just in case" fallbacks that mask real bugs
-- Boilerplate that adds no value
-- **NOT**: intentional documentation, public API docs, complex logic comments
+If conflicting scope flags are provided, warn the user and use the first one.
 
-### Dependency Health
-- Outdated packages with known vulnerabilities
-- Abandoned/unmaintained dependencies (no commits in 2+ years)
-- Duplicate dependencies serving the same purpose
-- Pinned versions preventing security updates
-- Missing lock file or lock file drift
-- Oversized dependencies for simple tasks (e.g., lodash for one function)
-- **NOT**: architecture decisions about which library to use
+---
 
-### Performance
-- N+1 query patterns
-- Missing pagination on unbounded queries
-- Synchronous operations blocking the event loop
-- Unnecessary re-renders (React) or DOM thrashing
-- Missing caching for expensive operations
-- Memory leaks (event listeners, subscriptions, closures)
-- Large bundle imports that could be tree-shaken or lazy-loaded
-- **NOT**: micro-optimizations, premature optimization
+## Phase 1: Scope Resolution & Resume Detection
 
-### Test Coverage
-- Untested critical paths (auth, payments, data mutations)
-- Missing edge case tests (empty inputs, boundary values, error states)
-- Flaky tests (timing-dependent, order-dependent, environment-dependent)
-- Tests that test implementation rather than behavior
-- Missing integration tests for API endpoints
-- Test fixtures with hardcoded secrets or PII
-- **NOT**: 100% coverage goals, testing trivial getters/setters, test efficiency/waste (that's Test Efficiency)
+### Step 1: Record current state
 
-### Test Efficiency
-- Trivial tests that provide no signal (render-only, getter/setter, library wrapper tests)
-- Tests that mirror implementation instead of asserting behavior (zero-signal mock tests)
-- Dead tests: skipped tests, orphaned test utilities, tests excluded by runner config
-- Redundant coverage: E2E tests duplicating unit-level assertions
-- CI pipeline design: missing regression gate, missing caching, excessive pipeline duration
-- Test suite shape (testing diamond): over-testing trivial code, under-testing critical paths at the right layer
-- Snapshot test overuse (large snapshots, frequently-changing snapshots)
-- Test fixture bloat and duplication
-- Test-to-source code ratio indicating maintenance burden
-- **NOT**: missing tests (that's Test Coverage), test correctness issues, flaky tests (that's Test Coverage)
+Run these commands to capture the current project context:
+- `git rev-parse HEAD` → `current_commit`
+- `git rev-parse --show-toplevel` → `project_root`
+- Detect project stack by scanning for key files:
+  - `package.json` → Node.js/JavaScript
+  - `tsconfig.json` → TypeScript
+  - `next.config.*` → Next.js
+  - `requirements.txt` / `pyproject.toml` → Python
+  - `go.mod` → Go
+  - `Cargo.toml` → Rust
+  - `pom.xml` / `build.gradle` → Java
+  - Store as `detected_stack` (comma-separated list)
 
-### Type Design
-- `any` types that should be specific
-- Overly complex generic types that hurt readability
-- Missing discriminated unions for state machines
-- Inconsistent type naming conventions
-- Type assertions (`as`) hiding real type errors
-- Missing null/undefined handling in types
-- **NOT**: library type definitions, auto-generated types
+### Step 2: Check for resume
 
-### Data Layer & Database
-- Missing database indexes on frequently queried columns
-- Schema design issues (denormalization problems, missing constraints)
-- Raw SQL without parameterized queries
-- Missing transactions for multi-step mutations
-- ORM misuse (eager loading everything, N+1 queries)
-- Missing data validation at the persistence layer
-- Migration safety (irreversible migrations without rollback plan)
-- **NOT**: query performance (belongs to Performance), API response shapes
+Check if `_bmad-output/deep-audit/state.json` exists:
 
-### API Contracts & Interface Consistency
-- Inconsistent naming across endpoints (camelCase vs snake_case)
-- Missing or inconsistent error response formats
-- Breaking changes without versioning
-- Undocumented endpoints or parameters
-- Inconsistent pagination patterns
-- Missing Content-Type headers or wrong status codes
-- Internal function signatures inconsistent with external API patterns
-- **NOT**: implementation details behind the API, database schema
+- **If exists AND `status` != "completed"**:
+  - Read `state.json` → `previous_state`
+  - If `previous_state.start_commit` == `current_commit`:
+    - **AUTO-RESUME**: Set `resume = true`
+    - Identify which agents are still pending from `previous_state.agents`
+    - Print: `Resuming interrupted audit (same commit). X of Y agents remaining.`
+  - If commits differ:
+    - **FRESH START**: Set `resume = false`
+    - Print: `Previous audit was on a different commit. Starting fresh.`
+- **If no state.json OR status == "completed"**:
+  - **FRESH START**: Set `resume = false`
 
-### SEO & Accessibility
-- Missing or duplicate meta tags (title, description, canonical)
-- Missing alt text on images
-- Insufficient color contrast
-- Missing ARIA labels on interactive elements
-- Non-semantic HTML (div soup)
-- Missing heading hierarchy (h1 → h2 → h3)
-- Missing keyboard navigation support
-- Missing `prefers-reduced-motion` support for animations
-- Touch target minimum size (24x24 CSS px)
-- Missing Open Graph / social sharing metadata
-- **NOT**: content quality, marketing strategy, visual design choices
+### Step 3: Build scope context
 
-### Documentation Health
-- README completeness (description, install, usage, quickstart)
-- Setup and onboarding documentation accuracy
-- Configuration documentation (env vars, config files, feature flags)
-- Public/exported API documentation for complex interfaces
-- Inline documentation for non-obvious logic (complex algorithms, regexes, magic numbers)
-- Doc structure, navigation, and discoverability
-- Doc-code synchronization (stale references, outdated examples)
-- Dead links and broken internal references
-- CLAUDE.md and AI assistant documentation
-- Contributing, licensing, and maintenance docs
-- **NOT**: trivial JSDoc/docstrings (AI Slop dimension), undocumented API endpoints (API Contracts dimension), git-diff-based staleness (/docs-quick-update command), prose style or grammar quality
+Generate the `scope_context` string that will be injected into every agent prompt.
 
-## Scoring Rubric
-
-Each dimension is scored 1–10:
-
-| Score | Label | Meaning |
-|-------|-------|---------|
-| 9–10 | Excellent | No findings or only minor nitpicks; production-ready |
-| 7–8 | Good | Minor issues; low risk, easy fixes |
-| 5–6 | Adequate | Notable gaps; some P2 findings that should be addressed |
-| 3–4 | Concerning | Significant issues; P1 findings present; needs attention before next release |
-| 1–2 | Critical | Severe problems; multiple P1 findings; immediate action required |
-
-**Overall Health Score** = weighted average:
-- Security: weight 3
-- Error Handling: weight 2
-- Architecture: weight 2
-- Simplification: weight 1
-- AI Slop: weight 1
-- Dependency Health: weight 1
-- Performance: weight 2 (full mode only)
-- Test Coverage: weight 2 (full mode only)
-- Test Efficiency: weight 1 (full mode only)
-- Type Design: weight 1 (full mode only)
-- Data Layer: weight 2 (full mode only)
-- API Contracts: weight 1 (full mode only)
-- SEO & Accessibility: weight 1 (full mode only)
-- Documentation Health: weight 1 (full mode only)
-
-## Severity Definitions
-
-| Level | Label | Meaning | Action |
-|-------|-------|---------|--------|
-| **P1** | Critical | Security vulnerability, data loss risk, or production blocker | Fix before next deploy |
-| **P2** | Important | Significant quality issue that degrades maintainability or reliability | Fix within current sprint |
-| **P3** | Minor | Code quality improvement; low risk but worth addressing | Fix when touching the file |
-
-## Confidence Threshold
-
-Agents MUST only report findings with **confidence >= 80%** (on a 0-100 scale).
-
-- **90-100**: Very high confidence — clear violation with concrete evidence
-- **80-89**: High confidence — strong signal with reasonable certainty
-- **Below 80**: Do NOT report — risk of false positive outweighs value
-
-When assessing confidence, consider:
-- Is this a definitive violation or a judgment call?
-- Could there be a valid reason for this pattern you can't see?
-- Would a senior engineer agree this is an issue?
-
-## False Positive Prevention
-
-Agents MUST NOT report:
-- Issues a linter or formatter would catch (eslint, prettier, stylelint)
-- Subjective style preferences that a senior engineer might reasonably disagree with
-- Pre-existing patterns the codebase uses consistently (these are intentional conventions, not bugs)
-- Potential issues that depend on runtime state, specific inputs, or environment config you cannot verify
-- Micro-optimizations with negligible real-world impact
-
-## Agent Output Format
-
-Every agent MUST produce output in exactly this format.
-
-### Finding Block
-
+**For `full-project`:**
 ```
-=== FINDING ===
-agent: <agent-file-name without .md>
-severity: P1|P2|P3
-confidence: <80-100>
-file: <relative file path>
-line: <line number or range, e.g., 42 or 42-58>
-dimension: <dimension name from boundaries above>
-title: <concise one-line title>
-description: |
-  <2-4 sentences explaining the issue, why it matters, and concrete evidence>
-suggestion: |
-  <specific fix or approach — code snippet if helpful, but keep it brief>
-=== END FINDING ===
+SCOPE: Full project audit
+PROJECT ROOT: <project_root>
+STACK: <detected_stack>
+INSTRUCTIONS: Review the entire codebase. Focus on source files, configuration, and infrastructure. Skip node_modules, dist, build, .git, and vendor directories.
 ```
 
-### Dimension Summary Block
+**For `pr`:**
+- Run: `gh pr diff <number> --name-only` → file list
+- Run: `gh pr diff <number>` → full diff
+- Write the full diff to `_bmad-output/deep-audit/scope-diff.md`
+- Build scope_context with the file list and a reference to the diff file:
+```
+SCOPE: PR #<number> audit
+PROJECT ROOT: <project_root>
+STACK: <detected_stack>
+CHANGED FILES:
+<file list>
+DIFF: Read `_bmad-output/deep-audit/scope-diff.md` for the full unified diff.
+INSTRUCTIONS: Focus your review on the changed files and their immediate dependencies. For architectural review, also consider how changes fit into the broader codebase.
+```
 
-One per dimension the agent covers:
+**For `since-commit` or `since-date`:**
+- For commit: `git diff <hash>...HEAD --name-only` and `git diff <hash>...HEAD`
+- For date: `git log --since="<date>" --format="%H" | tail -1` → oldest_hash, then `git diff <oldest_hash>...HEAD --name-only` and `git diff <oldest_hash>...HEAD`
+- Write the full diff to `_bmad-output/deep-audit/scope-diff.md`
+- Build scope_context similarly to PR scope (file list + diff file reference).
+
+Store `scope_context` for injection into agent prompts.
+
+---
+
+## Phase 1.5: Agent Relevance Filter
+
+**Skip this phase for `mode = "single"`.** Single-agent runs always proceed regardless of detected stack.
+
+For `mode = "quick"` or `mode = "full"`, check `detected_stack` and project files to skip agents whose dimensions clearly don't apply:
+
+| Agent | Skip if... |
+|-------|-----------|
+| `type-design-analyzer` | No `tsconfig.json` found |
+| `data-layer-reviewer` | No DB-related deps in package.json (`prisma`, `drizzle`, `mongoose`, `pg`, `mysql`, `mysql2`, `sqlite3`, `better-sqlite3`, `typeorm`, `sequelize`, `knex`, `@prisma/client`) |
+| `seo-accessibility-auditor` | No frontend framework detected (no `react`, `vue`, `svelte`, `angular`, `next`, `nuxt`, `@angular/core`, `solid-js`, `astro` in deps) |
+| `api-contract-reviewer` | No route/API deps detected (no `express`, `fastify`, `hono`, `koa`, `@nestjs/core`, `restify` in deps) AND no `routes/` or `api/` directory found |
+
+For each skipped agent:
+- Set status to `"skipped"` in state.json (distinct from `"pending"` or `"failed"`)
+- Print: `Skipping <agent-name> — <reason> (not detected in project)`
+
+Note: These are conservative filters. If in doubt, do NOT skip — let the agent determine N/A during its review.
+
+---
+
+## Phase 2: Load Agent Definitions
+
+Read all agent prompt files from `skills/deep-audit/agents/` **IN PARALLEL** (use multiple Read tool calls in a single response).
+
+Build the complete agent roster:
+
+**Quick mode agents:**
+```
+quick_agents = [
+  { file: "security-and-error-handling.md", model: "opus",   dimensions: ["Security", "Error Handling"] },
+  { file: "architecture-and-complexity.md", model: "opus",   dimensions: ["Architecture", "Simplification"] },
+  { file: "code-health.md",                model: "sonnet", dimensions: ["AI Slop Detection", "Dependency Health"] }
+]
+```
+
+**Full mode additional agents:**
+```
+full_agents = [
+  { file: "performance-profiler.md",       model: "sonnet", dimensions: ["Performance"] },
+  { file: "test-strategy-analyst.md",      model: "opus",   dimensions: ["Test Coverage", "Test Efficiency"] },
+  { file: "type-design-analyzer.md",       model: "sonnet", dimensions: ["Type Design"] },
+  { file: "data-layer-reviewer.md",        model: "opus",   dimensions: ["Data Layer & Database"] },
+  { file: "api-contract-reviewer.md",      model: "sonnet", dimensions: ["API Contracts & Interface Consistency"] },
+  { file: "seo-accessibility-auditor.md",  model: "sonnet", dimensions: ["SEO & Accessibility"] }
+]
+```
+
+**Build the active agent list based on mode:**
+
+- **If `mode = "single"`**: Search both `quick_agents` and `full_agents` for an agent whose filename (without `.md`) matches `single_agent`. Also check `documentation-health.md` (valid for single-agent runs even though excluded from roster). If found → `agents = [matched_agent]`. If NOT found → print the error below and **STOP** (do not proceed):
+  ```
+  Unknown agent: "<single_agent>"
+
+  Available agents:
+    Quick mode: security-and-error-handling, architecture-and-complexity, code-health
+    Full mode:  performance-profiler, test-strategy-analyst, type-design-analyzer,
+                data-layer-reviewer, api-contract-reviewer, seo-accessibility-auditor,
+                documentation-health
+  ```
+- **If `mode = "quick"`**: `agents = quick_agents`
+- **If `mode = "full"`**: `agents = quick_agents + full_agents`
+
+Filter out agents that were marked as `"skipped"` in Phase 1.5.
+
+If resuming: further filter `agents` to only those with status "pending" in `previous_state.agents`.
+
+---
+
+## Phase 3: Initialize State
+
+Create `_bmad-output/deep-audit/` directory and `_bmad-output/deep-audit/agents/` subdirectory if they don't exist.
+
+Write `_bmad-output/deep-audit/state.json` (reference `templates/state.json.template` for structure):
+
+```json
+{
+  "status": "in_progress",
+  "mode": "<quick|full|single>",
+  "scope": "<scope type>",
+  "scope_value": "<scope value or null>",
+  "start_commit": "<current_commit>",
+  "start_time": "<ISO timestamp>",
+  "end_time": null,
+  "detected_stack": "<detected_stack>",
+  "agents": {
+    "<agent-file-name>": {
+      "status": "pending|skipped",
+      "model": "<model>",
+      "dimensions": ["<dim1>", "<dim2>"],
+      "started_at": null,
+      "completed_at": null,
+      "findings_count": 0,
+      "output_file": "_bmad-output/deep-audit/agents/<agent-file-name>.md"
+    }
+  },
+  "triage": {
+    "accepted_count": 0,
+    "skipped_count": 0,
+    "invalid_count": 0,
+    "skipped_findings": []
+  },
+  "themes": [],
+  "report_path": null
+}
+```
+
+If resuming, merge pending agent statuses into the existing state (keep completed agents' data intact).
+
+**[CHECKPOINT]** state.json written — safe to resume from Phase 4.
+
+Print status:
+```
+[Phase 3 complete: State initialized]
+Deep Audit — <mode> mode
+Scope: <scope description>
+Stack: <detected_stack>
+Agent(s): <count> (<list of agent names>)
+Skipped: <count> (<list of skipped agent names, if any>)
+Commit: <short hash>
+```
+
+---
+
+## Phase 4: Spawn Agents
+
+Spawn agents in batches of up to 5 at a time using the Task tool. For each agent in the current batch:
+
+1. Construct the full prompt by combining:
+   - The agent prompt file content (already read in Phase 2)
+   - The scope_context from Phase 1
+   - Agents reference `skills/deep-audit/shared-agent-instructions.md` directly for output format, confidence rules, and tool guidelines — no need to inject that content
+
+2. Spawn via Task tool:
+   ```
+   Tool: Task
+   subagent_type: general-purpose
+   model: <agent.model>
+   max_turns: 50 (for documentation-health agent specifically)
+   description: "deep-audit: <agent-name>"
+   prompt: |
+     <agent prompt content>
+
+     ---
+     ## Scope Context (injected by orchestrator)
+     <scope_context>
+   ```
+
+3. After each agent completes:
+   - Check for output file at `_bmad-output/deep-audit/agents/<name>.md`
+   - **Fallback**: If the agent returned inline output but did not write to the file, write the output to the expected path
+   - Update state.json: set agent status to "completed" with timestamp and findings_count
+   - Print: `[N/TOTAL] <name> complete (<count> findings)`
+
+4. After all agents complete:
+   - Print: `[Phase 4 complete: all agents finished]`
+
+If any agent fails (Task tool returns error):
+- Log the error in the agent's state
+- Set agent status to "failed"
+- Continue with remaining agents (do not abort the audit)
+- Report failed agents in the final summary
+
+---
+
+## Phase 5: Consolidate & Triage (subagent)
+
+Spawn a dedicated subagent with a fresh context window. The orchestrator does NOT perform consolidation or triage itself — it delegates to preserve context budget for state management.
+
+1. Read the consolidate-and-triage agent prompt from `skills/deep-audit/agents/consolidate-and-triage.md`
+2. Spawn via Task tool:
+   ```
+   Tool: Task
+   subagent_type: general-purpose
+   model: opus
+   description: "deep-audit: consolidate-and-triage"
+   prompt: |
+     <consolidate-and-triage.md content>
+   ```
+
+3. After the subagent completes:
+   - Read `_bmad-output/deep-audit/findings.md`
+   - Parse the Triage Summary section for counts
+   - Update `state.triage` in state.json with accepted/skipped/invalid counts
+   - Print: `[Phase 5 complete: X accepted, Y skipped, Z invalid, W dupes merged]`
+
+---
+
+## Phase 6: Generate Report (subagent)
+
+Spawn a dedicated report generation subagent with a fresh context window. The orchestrator does NOT generate the report itself.
+
+1. Read the report template from `skills/deep-audit/templates/report-template.md`
+2. Spawn via Task tool:
+   ```
+   Tool: Task
+   subagent_type: general-purpose
+   model: opus
+   description: "deep-audit: generate-report"
+   prompt: |
+     You are the report generation agent for a multi-agent codebase audit. Your job is to read the consolidated findings and produce the final user-facing report.
+
+     ## Input
+
+     1. Read the consolidated findings from: `_bmad-output/deep-audit/findings.md`
+     2. Read the report template from: `skills/deep-audit/templates/report-template.md` — it contains both the template structure AND the scoring reference (weights and score-to-label mapping) in HTML comments at the top
+
+     ## Instructions
+
+     Fill in the report template:
+
+     1. **Header fields**: date, mode, scope description, agent count, detected stack, duration, commit hash
+        - Read `_bmad-output/deep-audit/state.json` for mode, scope, start_time, detected_stack, start_commit, and agent list
+
+     2. **Scorecard**: Build from DIMENSION SUMMARY data in findings.md
+        - For each dimension: fill in score, P1/P2/P3 counts, assessment
+        - Calculate overall health score using the weighted formula in the scoring reference comment
+        - Map overall score to label using the score table in the scoring reference comment
+
+     3. **Findings sections**: Group ACCEPTED findings into implementation themes
+        - Same file(s) → same theme
+        - Same dimension + same root cause → same theme
+        - Logically related changes → same theme
+        - Name themes for the outcome (e.g., "Harden Auth Middleware", "Reduce Bundle Size")
+        - Structure: top-level = P1/P2/P3 sections, within each severity = findings grouped by theme
+        - Render each finding using the Finding Detail Template in the report template
+
+     4. **Skipped Findings appendix**: Copy from findings.md Skipped Findings table
+
+     5. **Invalid Findings appendix**: Copy from findings.md Invalid Findings table
+
+     6. **Next Steps**: Keep as-is (point to @refactoring-planner)
+
+     7. **Statistics**: Total findings, per-severity counts, agent count, dimension count, per-agent breakdown table
+
+     ## Output
+
+     Determine the output path:
+     - Base: `_bmad-output/deep-audit/deep-audit-<YYYY-MM-DD>.md`
+     - If file exists, append suffix: `-2`, `-3`, etc.
+
+     Write the filled report to the output path.
+     After writing, print: `[REPORT WRITTEN] <output-path>`
+   ```
+
+3. After the subagent completes:
+   - Capture the report path from its output
+   - Update state.json with `report_path`
+   - Print: `[Phase 6 complete: report written]`
+
+---
+
+## Phase 7: Finalize State
+
+Update `_bmad-output/deep-audit/state.json`:
+- Set `status = "completed"`
+- Set `end_time` to current ISO timestamp
+- Set `report_path` to the report file path
+
+Print: `[Phase 7 complete: state finalized]`
+
+---
+
+## Phase 8: Present Summary
+
+Print a concise summary to the user:
 
 ```
-=== DIMENSION SUMMARY ===
-dimension: <dimension name>
-score: <1-10>
-p1_count: <number>
-p2_count: <number>
-p3_count: <number>
-assessment: |
-  <2-3 sentences summarizing the dimension's health and key patterns observed>
-=== END DIMENSION SUMMARY ===
+═══════════════════════════════════════════════════
+  DEEP AUDIT COMPLETE
+═══════════════════════════════════════════════════
+
+Mode: <quick|full|single> (<agent_count> agent(s))
+Scope: <scope description>
+Duration: <duration>
+
+SCORECARD
+─────────────────────────────────────────────────
+<dimension>          <score>/10  (<P1> P1, <P2> P2, <P3> P3)
+<dimension>          <score>/10  (<P1> P1, <P2> P2, <P3> P3)
+...
+─────────────────────────────────────────────────
+Overall Health:      <overall>/10 — <label>
+
+FINDINGS: <total_accepted> accepted (<P1_count> critical, <P2_count> important, <P3_count> minor)
+Skipped: <skip_count> | Invalid: <invalid_count>
+
+THEMES
+1. <theme name> (<finding_count> findings, <severity breakdown>)
+2. <theme name> (<finding_count> findings, <severity breakdown>)
+...
+
+Report: <report_path>
+Findings: _bmad-output/deep-audit/findings.md
+State:  _bmad-output/deep-audit/state.json
+
+Suggest: Run @refactoring-planner for execution plan
+═══════════════════════════════════════════════════
 ```
 
-### Output Order
+If any agents failed, add a section:
+```
+WARNINGS
+- Agent <name> failed: <error summary>
+```
 
-1. All `=== FINDING ===` blocks (sorted by severity: P1 first, then P2, then P3)
-2. All `=== DIMENSION SUMMARY ===` blocks
+If any agents were skipped (Phase 1.5), add:
+```
+SKIPPED AGENTS
+- <agent-name>: <reason>
+```
 
-### Important Rules
+</workflow>
 
-- Do NOT include findings below 80% confidence
-- Do NOT report findings outside your assigned dimensions
-- Do NOT suggest fixes that introduce new problems
-- Do NOT report the same issue multiple times across different files — report the pattern once and list affected files
-- If no findings for a dimension, still include the DIMENSION SUMMARY with score and assessment
-- Keep descriptions factual and evidence-based; avoid vague language like "could potentially" or "might cause issues"
+## Error Recovery
 
-## Tool Usage Strategy
+If the workflow fails at any point:
 
-### When Serena MCP is Available
+1. **State is preserved**: `state.json` tracks which agents completed. Re-running `/deep-audit` with the same commit will auto-resume from where it left off.
 
-If `find_symbol`, `find_referencing_symbols`, or other Serena MCP tools are available in your tool list, prefer them over Read/Grep for targeted code exploration:
+2. **Manual recovery**: Read `_bmad-output/deep-audit/state.json` to see:
+   - Which agents completed successfully (their output files are preserved)
+   - Which agents were pending when the failure occurred
 
-| Task | Without Serena | With Serena |
-|------|---------------|-------------|
-| Find all usages of a function | Grep for function name | `find_referencing_symbols` |
-| Understand module dependencies | Read import statements across files | `find_symbol` + references |
-| Check type definitions | Grep for `interface`/`type` keywords | `find_symbol` with type filter |
-| Trace call chains | Read multiple files following imports | `find_referencing_symbols` recursively |
-| Find implementations | Grep for class/function names | `find_symbol` with implementation filter |
+3. **Force fresh start**: Delete `_bmad-output/deep-audit/state.json` and re-run.
 
-**Fallback**: If Serena tools are not available or return errors, fall back to Read/Grep. Do not fail the audit because an MCP tool is unavailable.
+## Safety Rules
 
-### General Tool Guidelines
-
-- **Prefer targeted reads**: Read specific functions/sections rather than entire files when possible
-- **Use Glob first**: Find relevant files before reading them
-- **Batch searches**: Make parallel Grep calls when checking for multiple patterns
+- NEVER modify source code. This is a read-only audit.
+- NEVER execute project code or tests. Only use git, gh, and file reading tools.
+- NEVER share audit findings outside the local report file.
+- If a scope flag points to a non-existent PR or commit, inform the user and stop.
+- If the project has no source files (empty repo), inform the user and stop.

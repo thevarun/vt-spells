@@ -43,12 +43,12 @@ const INSTALLED_FILES = {
     'dev-story-backend.md',
     'dev-story-fullstack.md',
     'dev-story-ui.md',
-    'deep-audit.md',
   ],
   agents: [
     'principal-code-reviewer.md',
     'story-prep-master.md',
     'desk-check-gate.md',
+    'refactoring-planner.md',
   ],
   'skills/agent-creator': [
     'SKILL.md',
@@ -107,6 +107,7 @@ const INSTALLED_FILES = {
   'skills/deep-audit': [
     'SKILL.md',
     'INSPIRATIONS.md',
+    'shared-agent-instructions.md',
   ],
   'skills/deep-audit/agents': [
     'security-and-error-handling.md',
@@ -119,10 +120,13 @@ const INSTALLED_FILES = {
     'api-contract-reviewer.md',
     'seo-accessibility-auditor.md',
     'documentation-health.md',
-    'refactoring-planner.md',
+    'consolidate-and-triage.md',
   ],
   'skills/deep-audit/templates': [
     'report-template.md',
+    'agent-output.md',
+    'findings.md',
+    'state.json.template',
   ],
 };
 

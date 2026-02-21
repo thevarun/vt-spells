@@ -1,3 +1,38 @@
+<!-- TEMPLATE INSTRUCTIONS (do not include in final output):
+     Replace {{VARIABLE}} with actual values.
+     {{#IF_X}}...{{/IF_X}} = include the section only if X > 0.
+     {{#EACH_X}}...{{/EACH_X}} = repeat the section for each item in X.
+     Delete all template syntax and these instructions from the final output. -->
+
+<!-- SCORING REFERENCE (use for calculations, do not include in final output):
+
+     Each dimension is scored 1-10:
+     | Score | Label      | Meaning                                                              |
+     |-------|------------|----------------------------------------------------------------------|
+     | 9-10  | Excellent  | No findings or only minor nitpicks; production-ready                 |
+     | 7-8   | Good       | Minor issues; low risk, easy fixes                                   |
+     | 5-6   | Adequate   | Notable gaps; some P2 findings that should be addressed              |
+     | 3-4   | Concerning | Significant issues; P1 findings present; needs attention             |
+     | 1-2   | Critical   | Severe problems; multiple P1 findings; immediate action required     |
+
+     Overall Health Score = weighted average of audited dimensions:
+     - Security: weight 3
+     - Error Handling: weight 2
+     - Architecture: weight 2
+     - Simplification: weight 1
+     - AI Slop: weight 1
+     - Dependency Health: weight 1
+     - Performance: weight 2 (full mode only)
+     - Test Coverage: weight 2 (full mode only)
+     - Test Efficiency: weight 1 (full mode only)
+     - Type Design: weight 1 (full mode only)
+     - Data Layer: weight 2 (full mode only)
+     - API Contracts: weight 1 (full mode only)
+     - SEO & Accessibility: weight 1 (full mode only)
+
+     Formula: overall = sum(score × weight) / sum(weights) for audited dimensions only.
+     Round to 1 decimal. Map to label using the score table above. -->
+
 # Deep Audit — {{DATE}}
 
 ## Scope
@@ -24,19 +59,34 @@
 {{#IF_P1_COUNT}}
 ### P1 — Critical
 
-{{P1_FINDINGS}}
+{{#EACH_P1_THEME}}
+#### {{THEME_NAME}} ({{FINDING_COUNT}} findings)
+
+{{THEME_FINDINGS}}
+
+{{/EACH_P1_THEME}}
 {{/IF_P1_COUNT}}
 
 {{#IF_P2_COUNT}}
 ### P2 — Important
 
-{{P2_FINDINGS}}
+{{#EACH_P2_THEME}}
+#### {{THEME_NAME}} ({{FINDING_COUNT}} findings)
+
+{{THEME_FINDINGS}}
+
+{{/EACH_P2_THEME}}
 {{/IF_P2_COUNT}}
 
 {{#IF_P3_COUNT}}
 ### P3 — Minor
 
-{{P3_FINDINGS}}
+{{#EACH_P3_THEME}}
+#### {{THEME_NAME}} ({{FINDING_COUNT}} findings)
+
+{{THEME_FINDINGS}}
+
+{{/EACH_P3_THEME}}
 {{/IF_P3_COUNT}}
 
 {{#IF_NO_FINDINGS}}
@@ -47,7 +97,7 @@ No findings above the confidence threshold. The codebase looks healthy across al
 
 <!-- Each finding renders as: -->
 <!--
-#### F-NNN: {{TITLE}} ({{SEVERITY}})
+##### F-NNN: {{TITLE}} ({{SEVERITY}})
 
 | | |
 |---|---|
@@ -63,82 +113,30 @@ No findings above the confidence threshold. The codebase looks healthy across al
 ---
 -->
 
-## Action Plan
+## Skipped Findings
 
-Top {{ACTION_PLAN_COUNT}} prioritized fixes:
+| ID | Title | Severity | Category | Reason |
+|----|-------|----------|----------|--------|
+{{SKIPPED_FINDINGS_ROWS}}
 
-{{ACTION_PLAN_ITEMS}}
+## Invalid Findings
 
-{{#IF_REFACTOR_PLAN}}
-## Refactoring Roadmap
+| ID | Title | Invalidity Reason |
+|----|-------|--------------------|
+{{INVALID_FINDINGS_ROWS}}
 
-> **{{THEME_COUNT}} themes** | **{{QUICK_WIN_COUNT}} quick wins** | **Total effort: {{TOTAL_EFFORT}}**
+## Next Steps
 
-{{EXECUTION_SUMMARY}}
-
-### Quick Wins
-
-{{QUICK_WIN_ITEMS}}
-
-### Phase 1 — Safe Refactors
-
-{{PHASE_1_THEMES}}
-
-### Phase 2 — Enablers
-
-{{PHASE_2_THEMES}}
-
-### Phase 3 — High Impact
-
-{{PHASE_3_THEMES}}
-
-### Phase 4 — Polish
-
-{{PHASE_4_THEMES}}
-
-### Theme Detail Template
-
-<!-- Each theme renders as: -->
-<!--
-#### T-NNN: {{THEME_NAME}}
-
-| | |
-|---|---|
-| **Effort** | {{EFFORT}} |
-| **Risk** | {{RISK}} |
-| **Phase** | {{PHASE}} |
-| **Findings** | {{FINDING_IDS}} |
-| **Dependencies** | {{DEPENDENCIES}} |
-| **Coverage Gate** | {{COVERAGE_GATE}} |
-| **Blast Radius** | {{BLAST_RADIUS}} |
-
-{{SUMMARY}}
-
-**Refactoring Steps:**
-
-{{STEPS}}
-
-**Files Involved:**
-
-{{FILES}}
-
-**Testing:**
-- *Before:* {{TESTS_BEFORE}}
-- *After:* {{TESTS_AFTER}}
-
-{{#IF_WARNINGS}}
-**Warnings:** {{WARNINGS}}
-{{/IF_WARNINGS}}
-
----
--->
-{{/IF_REFACTOR_PLAN}}
+Run `@refactoring-planner` to synthesize accepted findings into an actionable refactoring roadmap with themes, phases, and execution order.
 
 ## Statistics
 
 | Metric | Value |
 |--------|-------|
 | Total Findings | {{TOTAL_FINDINGS}} |
+| Accepted | {{ACCEPTED_COUNT}} |
+| Skipped | {{SKIPPED_COUNT}} |
+| Invalid | {{INVALID_COUNT}} |
 | P1 (Critical) | {{P1_COUNT}} |
 | P2 (Important) | {{P2_COUNT}} |
 | P3 (Minor) | {{P3_COUNT}} |

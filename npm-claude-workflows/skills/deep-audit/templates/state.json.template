@@ -1,0 +1,30 @@
+{
+  "status": "in_progress | completed",
+  "mode": "quick | full | single",
+  "scope": "full-project | pr | since-commit | since-date",
+  "scope_value": null,
+  "start_commit": "<git SHA>",
+  "start_time": "<ISO 8601>",
+  "end_time": null,
+  "detected_stack": "",
+  "agents": {
+    "<agent-name>": {
+      "status": "pending | in_progress | completed | failed",
+      "model": "opus | sonnet",
+      "dimensions": ["<dim1>", "<dim2>"],
+      "started_at": null,
+      "completed_at": null,
+      "findings_count": 0,
+      "output_file": "_bmad-output/deep-audit/agents/<agent-name>.md"
+    }
+  },
+  "triage": {
+    "accepted_count": 0,
+    "skipped_count": 0,
+    "skipped_findings": [
+      { "id": "F-NNN", "reason": "<one sentence>", "skip_type": "over-optimization | overkill | invalid | low-value-polish" }
+    ]
+  },
+  "themes": [],
+  "report_path": null
+}

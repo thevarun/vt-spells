@@ -18,10 +18,6 @@
     {
       "name": "github-pr-resolve",
       "description": "Assess open PRs, handle review comments, run CI, and merge"
-    },
-    {
-      "name": "deep-audit",
-      "description": "Multi-agent codebase audit across security, architecture, error handling, and more"
     }
   ],
   "agents": [
@@ -32,6 +28,14 @@
     {
       "name": "story-prep-master",
       "description": "Create, refine, or prepare user stories for development"
+    },
+    {
+      "name": "desk-check-gate",
+      "description": "Visual quality gate for UI stories — blocks on major issues"
+    },
+    {
+      "name": "refactoring-planner",
+      "description": "Synthesize deep-audit findings into an actionable refactoring roadmap with themes and execution order"
     }
   ],
   "skills": [
@@ -45,7 +49,7 @@
     },
     {
       "name": "deep-audit",
-      "description": "Agent prompts and templates for the deep-audit codebase audit"
+      "description": "Multi-agent codebase audit across security, architecture, error handling, and more"
     }
   ],
   "hooks": {

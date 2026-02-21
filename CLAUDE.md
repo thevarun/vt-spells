@@ -55,8 +55,8 @@ vt-spells/
 ├── npm-claude-workflows/        # @torka/claude-workflows
 │   ├── .claude-plugin/
 │   │   └── plugin.json          # Plugin manifest (commands, agents, skills, hooks, statusLine)
-│   ├── commands/                # Slash commands (8 markdown files)
-│   ├── agents/                  # Agent definitions (3 markdown files)
+│   ├── commands/                # Slash commands (7 markdown files)
+│   ├── agents/                  # Agent definitions (4 markdown files)
 │   ├── skills/
 │   │   ├── agent-creator/       # Sub-agent creation skill
 │   │   │   └── expertise/       # Domain expertise profiles
@@ -68,8 +68,9 @@ vt-spells/
 │   │   │   ├── agents/          # PM and Architect agent definitions
 │   │   │   └── references/      # Escalation guide
 │   │   └── deep-audit/          # Multi-agent codebase audit
-│   │       ├── agents/          # 10 audit + 1 refactoring planner agent prompt files
-│   │       └── templates/       # Report template
+│   │       ├── agents/          # 11 audit agent prompt files (incl. consolidate-and-triage)
+│   │       ├── shared-agent-instructions.md  # Output format, confidence rules, tool guidelines
+│   │       └── templates/       # Report, findings, agent-output, and state templates
 │   ├── bmad-workflows/          # BMAD Method integration
 │   ├── examples/
 │   │   └── settings.local.example.json
@@ -101,7 +102,7 @@ vt-spells/
 
 ### Component Inventory
 
-**Commands (11 distributed + 1 repo-local)**
+**Commands (10 distributed + 1 repo-local)**
 
 | Command | Package | Description | Dependencies |
 |---------|---------|-------------|--------------|
@@ -112,7 +113,6 @@ vt-spells/
 | `/dev-story-backend` | workflows | TDD backend story executor (red-green-refactor) | Standalone |
 | `/dev-story-fullstack` | workflows | Hybrid fullstack story executor (auto-detects UI vs backend) | Standalone |
 | `/dev-story-ui` | workflows | Design-first UI story executor with screenshot validation | Standalone |
-| `/deep-audit` | workflows | Multi-agent codebase audit with auto-generated refactoring roadmap. Supports `--agent <name>` for single-agent runs. Serena MCP-aware. | Standalone |
 | `/optimize-auto-approve-hook` | qol | Analyze auto-approve decisions, identify safe patterns | Standalone |
 | `/docs-quick-update` | qol | Detect code changes, suggest targeted doc updates | Standalone |
 | `/fresh-eyes` | qol | Mid-session fresh-eyes review using an Opus subagent | Standalone |
@@ -125,16 +125,17 @@ vt-spells/
 | `/agent-creator` | workflows | Create custom Claude Code sub-agents with expertise profiles | Standalone |
 | `/designer-founder` | workflows | Transform ideas into dev-ready frontend artifacts (multi-step) | Standalone |
 | `/product-architect` | workflows | Agent team (PM + Architect) creates PRD + Architecture from notes | BMAD Method |
-| `/deep-audit` | workflows | Agent prompts, templates, and refactoring planner for multi-agent codebase audit | Standalone |
+| `/deep-audit` | workflows | Multi-agent codebase audit with finding triage and theme-based reporting. Supports `--agent <name>` for single-agent runs. Serena MCP-aware. | Standalone |
 | `/nash` | qol | Review session transcripts to extract learnings and improve workflows | `~/.claude/nash-sources.yaml` |
 
-**Agents (3)**
+**Agents (4)**
 
 | Agent | Package | Description | Dependencies |
 |-------|---------|-------------|--------------|
 | `principal-code-reviewer` | workflows | Expert-level code review after completing stories | BMAD Method workflows |
 | `story-prep-master` | workflows | Create, refine, prepare user stories for development | BMAD Method workflows |
 | `desk-check-gate` | workflows | Visual quality gate for UI stories (blocks on major issues) | Standalone |
+| `refactoring-planner` | workflows | Synthesize deep-audit findings into refactoring roadmap with themes and execution order | Standalone (reads `_bmad-output/deep-audit/findings.md`) |
 
 **Scripts/Hooks (4)**
 

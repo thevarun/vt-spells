@@ -212,10 +212,10 @@ function install() {
     'agents/principal-code-reviewer.md',
     'agents/story-prep-master.md',
     'agents/desk-check-gate.md',
+    'agents/refactoring-planner.md',
     'skills/agent-creator/',
     'skills/designer-founder/',
     'skills/product-architect/',
-    'commands/deep-audit.md',
     'skills/deep-audit/',
     '*.backup',
   ];
@@ -261,9 +261,12 @@ function install() {
     }
   }
 
-  // Migration: remove renamed agent files from previous versions
+  // Migration: remove renamed/moved files from previous versions
   const migrations = [
     { old: 'skills/deep-audit/agents/test-coverage-analyst.md', renamed: 'test-strategy-analyst.md' },
+    { old: 'skills/deep-audit/agents/finding-triage.md', renamed: 'consolidate-and-triage.md' },
+    { old: 'skills/deep-audit/templates/shared-agent-instructions.md', renamed: 'shared-agent-instructions.md (moved to skill root)' },
+    { old: 'skills/deep-audit/templates/triage.md', renamed: 'findings.md (merged)' },
   ];
   for (const { old: oldFile, renamed } of migrations) {
     const oldPath = path.join(targetBase, oldFile);
